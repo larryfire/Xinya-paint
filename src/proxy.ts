@@ -5,12 +5,19 @@ import { verifyJWT } from "@/lib/jwt"
 const publicPaths = [
   "/api/auth/login",
   "/api/auth/logout",
+  "/api/auth/register",
+  "/login",
+  "/register",
 ]
 
 /** 静态资源路径前缀 */
 const staticPrefixes = ["/_next", "/favicon.ico", "/images", "/models"]
 
-export async function middleware(request: NextRequest) {
+/**
+ * Next.js 16 Proxy — 替代旧版 middleware
+ * 在请求到达页面/API之前执行鉴权拦截
+ */
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 静态资源直接放行
@@ -18,12 +25,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // 公开 API 放行
+  // 公开路由直接放行（登录页和认证API）
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
-  // API 路由统一校验
+  // API 路由统一校验 JWT
   if (pathname.startsWith("/api/")) {
     const token = request.cookies.get("token")?.value
     if (!token) {
@@ -59,8 +66,14 @@ export async function middleware(request: NextRequest) {
   }
 }
 
+/**
+ * 匹配所有路径，排除静态资源和图片
+ * Next.js 16 的 matcher 使用 path-to-regexp 语法，
+ * 空字符串 '' 也可用于匹配根路径
+ */
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    // 排除静态文件、图片、favicon
+    "/((?!_next/static|_next/image|favicon\\.ico).*)",
   ],
 }

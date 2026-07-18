@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
       return error("AUTH_FAILED", "用户名或密码错误", 401)
     }
 
+    // 检查审核状态
+    if (user.approvalStatus === "pending") {
+      return error("PENDING_APPROVAL", "账号正在等待管理员审核，请耐心等待", 403)
+    }
+    if (user.approvalStatus === "rejected") {
+      return error("REJECTED", "账号审核未通过，请联系管理员", 403)
+    }
+
     // 验证密码
     const isValid = await bcrypt.compare(password, user.password)
     if (!isValid) {

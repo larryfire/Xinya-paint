@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (err) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {
-      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, 401)
+      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, err.name === "UnauthorizedError" ? 401 : 403)
     }
     return error("INTERNAL_ERROR", "获取场景数据失败", 500)
   }

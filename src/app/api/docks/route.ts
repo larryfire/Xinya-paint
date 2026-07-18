@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     return success(docks)
   } catch (err) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {
-      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, 401)
+      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, err.name === "UnauthorizedError" ? 401 : 403)
     }
     return error("INTERNAL_ERROR", "获取码头列表失败", 500)
   }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     return success(dock, "创建成功", 201)
   } catch (err) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {
-      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, 401)
+      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, err.name === "UnauthorizedError" ? 401 : 403)
     }
     return error("INTERNAL_ERROR", "创建码头失败", 500)
   }

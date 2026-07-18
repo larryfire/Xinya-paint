@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
         phone: true,
         teamId: true,
         isActive: true,
+        approvalStatus: true,
+        createdAt: true,
         team: { select: { name: true } },
       },
     })

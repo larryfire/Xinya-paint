@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return success(updated, "更新成功")
   } catch (err) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {
-      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, 401)
+      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, err.name === "UnauthorizedError" ? 401 : 403)
     }
     return error("INTERNAL_ERROR", "更新船舶失败", 500)
   }
@@ -83,7 +83,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return success(null, "删除成功")
   } catch (err) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {
-      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, 401)
+      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, err.name === "UnauthorizedError" ? 401 : 403)
     }
     return error("INTERNAL_ERROR", "删除船舶失败", 500)
   }
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return success(shipTeam, "分配成功", 201)
   } catch (err: unknown) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {
-      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, 401)
+      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, err.name === "UnauthorizedError" ? 401 : 403)
     }
     // 违反唯一约束
     if (typeof err === "object" && err && "code" in err && (err as any).code === "P2002") {

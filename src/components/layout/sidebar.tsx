@@ -14,6 +14,7 @@ import {
   Users,
   Ship,
   Map,
+  UserCheck,
   ChevronLeft,
 } from "lucide-react"
 
@@ -24,6 +25,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Users,
   Ship,
   Map,
+  UserCheck,
 }
 
 interface SidebarProps {

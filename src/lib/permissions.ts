@@ -117,6 +117,12 @@ export const allMenuItems: MenuItem[] = [
     icon: "Map",
     permission: "scene:view",
   },
+  {
+    label: "注册审核",
+    href: "/admin/registrations",
+    icon: "UserCheck",
+    permission: "user:manage",
+  },
 ]
 
 /** 根据角色过滤菜单 */

@@ -13,6 +13,9 @@ interface UserInfo {
   craftType?: string | null
   level?: string | null
   phone?: string | null
+  isActive?: boolean
+  approvalStatus?: string
+  createdAt?: string
 }
 
 interface AuthState {

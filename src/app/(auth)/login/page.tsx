@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -91,6 +92,13 @@ export default function LoginPage() {
             登录
           </Button>
         </form>
+
+        <div className="mt-4 text-center text-sm text-slate-500">
+          还没有账号？
+          <Link href="/register" className="text-blue-600 hover:underline ml-1">
+            注册新账号
+          </Link>
+        </div>
       </CardContent>
     </Card>
   )

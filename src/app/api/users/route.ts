@@ -14,13 +14,16 @@ export async function GET(request: NextRequest) {
     const { page, pageSize, skip } = getPaginationParams(searchParams)
     const role = searchParams.get("role") || undefined
     const search = searchParams.get("search") || undefined
+    const approvalStatus = searchParams.get("approvalStatus") || undefined
 
     const where: Record<string, unknown> = { isActive: true }
     if (role) where.role = role
+    if (approvalStatus) where.approvalStatus = approvalStatus
     if (search) {
       where.OR = [
         { realName: { contains: search } },
         { username: { contains: search } },
+        { phone: { contains: search } },
       ]
     }
 
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true, username: true, realName: true, role: true,
           gender: true, age: true, craftType: true, level: true,
-          phone: true, teamId: true, isActive: true, createdAt: true,
+          phone: true, teamId: true, isActive: true, approvalStatus: true, createdAt: true,
           team: { select: { name: true } },
         },
         skip,
