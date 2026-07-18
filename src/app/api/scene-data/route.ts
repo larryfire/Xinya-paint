@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
           id: true, name: true, shipType: true, status: true,
           dockId: true, berthId: true, positionX: true, positionZ: true,
           rotation: true, length: true, width: true, height: true,
+          dock: { select: { name: true } },
+          berth: { select: { name: true } },
         },
       }),
     ])
@@ -27,6 +29,10 @@ export async function GET(request: NextRequest) {
         length: Number(s.length),
         width: Number(s.width),
         height: Number(s.height),
+        dockName: s.dock?.name ?? null,
+        berthName: s.berth?.name ?? null,
+        dock: undefined,
+        berth: undefined,
       })),
     })
   } catch (err) {

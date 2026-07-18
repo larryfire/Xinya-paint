@@ -14,6 +14,22 @@ const publicPaths = [
 const staticPrefixes = ["/_next", "/favicon.ico", "/images", "/models"]
 
 /**
+ * 从请求中提取 JWT Token
+ * 优先 Cookie（httpOnly），其次 Authorization: Bearer <token>（移动端兼容）
+ */
+function extractToken(request: NextRequest): string | null {
+  const cookieToken = request.cookies.get("token")?.value
+  if (cookieToken) return cookieToken
+
+  const authHeader = request.headers.get("Authorization")
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7)
+  }
+
+  return null
+}
+
+/**
  * Next.js 16 Proxy — 替代旧版 middleware
  * 在请求到达页面/API之前执行鉴权拦截
  */
@@ -32,7 +48,7 @@ export async function proxy(request: NextRequest) {
 
   // API 路由统一校验 JWT
   if (pathname.startsWith("/api/")) {
-    const token = request.cookies.get("token")?.value
+    const token = extractToken(request)
     if (!token) {
       return NextResponse.json(
         { success: false, error: { code: "UNAUTHORIZED", message: "请先登录" } },
@@ -51,7 +67,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // 页面路由：未登录重定向到登录页
-  const token = request.cookies.get("token")?.value
+  const token = extractToken(request)
   if (!token) {
     const loginUrl = new URL("/login", request.url)
     return NextResponse.redirect(loginUrl)

@@ -3,174 +3,172 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2 } from "lucide-react"
-import { SHIP_STATUS_MAP, DOCK_STATUS_MAP } from "@/lib/constants"
+import { Loader2, Ship, Anchor, Ruler } from "lucide-react"
+import { SHIP_STATUS_MAP } from "@/lib/constants"
 import type { DockInfo, ShipInfo } from "@/types"
+import { SceneModel } from "@/components/3d/scene-model"
 
-/** 将状态颜色映射到 3D 颜色 */
-const statusToColor = (status: string, type: "dock" | "ship") => {
-  if (type === "dock") {
-    return DOCK_STATUS_MAP[status as keyof typeof DOCK_STATUS_MAP]?.color || "#95A5A6"
-  }
-  return SHIP_STATUS_MAP[status as keyof typeof SHIP_STATUS_MAP]?.color || "#95A5A6"
-}
+/** 状态颜色映射 */
+const statusToColor = (status: string) =>
+  SHIP_STATUS_MAP[status as keyof typeof SHIP_STATUS_MAP]?.color || "#95A5A6"
 
 export default function Dynamic3DPage() {
   const [loading, setLoading] = useState(true)
   const [docks, setDocks] = useState<DockInfo[]>([])
   const [ships, setShips] = useState<ShipInfo[]>([])
   const [selectedShip, setSelectedShip] = useState<ShipInfo | null>(null)
+  const [error, setError] = useState("")
 
   useEffect(() => {
-    setLoading(true)
-    fetch("/api/scene-data")
-      .then((r) => r.json())
-      .then((data) => {
+    async function fetchSceneData() {
+      try {
+        const res = await fetch("/api/scene-data")
+        const data = await res.json()
         if (data.success) {
           setDocks(data.data.docks)
           setShips(data.data.ships)
+        } else {
+          setError(data.error?.message || "加载场景数据失败")
         }
-      })
-      .finally(() => setLoading(false))
+      } catch {
+        setError("网络错误，无法加载场景数据")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSceneData()
   }, [])
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
+          <p className="text-sm text-slate-500">正在加载3D场景...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-red-500">{error}</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">3D船舶动态图</h1>
-        <p className="text-sm text-slate-500">厂区码头、泊位、船坞与船舶状态总览</p>
+      {/* 顶部标题栏 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">3D船舶动态图</h1>
+          <p className="text-sm text-slate-500">
+            厂区码头 · 泊位 · 船坞与船舶状态总览 — 拖拽旋转 · 滚轮缩放 · 右键平移
+          </p>
+        </div>
+
+        {/* 统计信息 */}
+        <div className="flex items-center gap-4 text-sm text-slate-500">
+          <span className="flex items-center gap-1">
+            <Ship className="h-4 w-4" />
+            船舶 {ships.length}
+          </span>
+          <span className="flex items-center gap-1">
+            <Anchor className="h-4 w-4" />
+            码头/泊位 {docks.length}
+          </span>
+        </div>
       </div>
 
-      {/* 3D 场景占位 */}
+      {/* 3D 场景 */}
       <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          <div className="relative w-full h-[500px] bg-gradient-to-b from-sky-100 to-blue-200 overflow-hidden">
-            {/* 简易2D俯视图 */}
-            <div className="absolute inset-0" style={{ transform: "scale(1)" }}>
-              {/* 水域 */}
-              <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-b from-blue-300/40 to-blue-500/60" />
+        <CardContent className="p-0 relative">
+          <div className="w-full h-[580px]">
+            <SceneModel
+              docks={docks}
+              ships={ships}
+              selectedShip={selectedShip}
+              onSelectShip={setSelectedShip}
+            />
+          </div>
 
-              {/* 陆地/码头区 */}
-              <div className="absolute top-0 left-0 right-0 h-[40%] bg-gradient-to-b from-amber-100 to-amber-200/80" />
-
-              {/* 分隔线 - 海岸线 */}
-              <div className="absolute top-[40%] left-0 right-0 h-1 bg-amber-400" />
-
-              {/* 码头设施 */}
-              {docks.map((dock) => {
-                const isDock = dock.type === "dock"
-                const top = isDock ? "12%" : "55%"
-                const color = statusToColor(dock.status, "dock")
-                const px = ((dock.positionX + 50) / 100) * 90 + 5
-                const pz = ((dock.positionZ + 30) / 60) * 40 + 10
-
-                return (
-                  <div
-                    key={dock.id}
-                    className="absolute flex flex-col items-center"
-                    style={{
-                      left: `${px}%`,
-                      top: `${pz}%`,
-                      transform: "translate(-50%, -50%)",
-                    }}
-                  >
-                    <div
-                      className="rounded border-2 flex items-center justify-center"
-                      style={{
-                        width: `${Math.max(60, dock.width * 6)}px`,
-                        height: `${Math.max(20, dock.depth * 2)}px`,
-                        borderColor: color,
-                        backgroundColor: color + "20",
-                      }}
-                    >
-                      <span className="text-[10px] font-semibold whitespace-nowrap px-1" style={{ color }}>
-                        {dock.name}
-                        {isDock ? "坞" : "泊位"}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {/* 船舶 */}
-              {ships.map((ship) => {
-                const color = statusToColor(ship.status, "ship")
-                const px = ship.positionX
-                  ? ((ship.positionX + 50) / 100) * 90 + 5
-                  : 10 + ships.indexOf(ship) * 25
-                const pz = ship.positionZ
-                  ? ((ship.positionZ + 30) / 60) * 40 + 10
-                  : 50 + (ships.indexOf(ship) % 3) * 15
-
-                return (
-                  <div
-                    key={ship.id}
-                    className="absolute flex flex-col items-center cursor-pointer hover:scale-110 transition-transform"
-                    style={{
-                      left: `${px}%`,
-                      top: `${pz}%`,
-                      transform: "translate(-50%, -50%)",
-                    }}
-                    onClick={() => setSelectedShip(selectedShip?.id === ship.id ? null : ship)}
-                  >
-                    <div
-                      className="rounded-md border-2 flex items-center justify-center shadow-md"
-                      style={{
-                        width: `${Math.max(30, Number(ship.length) * 2)}px`,
-                        height: `${Math.max(10, Number(ship.width) * 1.5)}px`,
-                        borderColor: color,
-                        backgroundColor: color + "30",
-                      }}
-                    >
-                      <span className="text-[9px] font-bold truncate px-1" style={{ color }}>
-                        {ship.name}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* 图例 */}
-            <div className="absolute bottom-3 left-3 bg-white/90 rounded-lg p-2 shadow text-xs space-y-1">
-              <p className="font-semibold mb-1">图例</p>
-              <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-red-500" /> 占用/坞内</div>
-              <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-green-500" /> 空闲/在航</div>
-              <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-yellow-500" /> 维护/靠泊</div>
-              <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-purple-500" /> 维修</div>
-            </div>
-
-            {/* 船舶信息面板 */}
-            {selectedShip && (
-              <div className="absolute top-3 right-3 bg-white rounded-lg p-3 shadow-lg w-52 text-sm">
-                <h3 className="font-bold text-base">{selectedShip.name}</h3>
-                <div className="mt-1 space-y-0.5">
-                  <p>类型: {selectedShip.shipType}</p>
-                  <p>尺寸: {String(selectedShip.length)}×{String(selectedShip.width)}×{String(selectedShip.height)}m</p>
-                  <p className="flex items-center gap-1">
-                    状态:{" "}
-                    <Badge
-                      style={{
-                        backgroundColor: statusToColor(selectedShip.status, "ship"),
-                        color: "white",
-                      }}
-                    >
-                      {SHIP_STATUS_MAP[selectedShip.status]?.label || selectedShip.status}
-                    </Badge>
-                  </p>
-                  {selectedShip.dockName && <p>所在坞: {selectedShip.dockName}</p>}
-                  {selectedShip.berthName && <p>靠泊位: {selectedShip.berthName}</p>}
-                </div>
+          {/* 选中船舶信息面板 */}
+          {selectedShip && (
+            <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-lg w-56 text-sm border border-slate-200">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-base text-slate-900">
+                  {selectedShip.name}
+                </h3>
+                <button
+                  onClick={() => setSelectedShip(null)}
+                  className="text-slate-400 hover:text-slate-600 text-lg leading-none"
+                >
+                  ×
+                </button>
               </div>
-            )}
+
+              <div className="space-y-1.5 text-slate-600">
+                <div className="flex items-center gap-2">
+                  <Ship className="h-3.5 w-3.5 text-slate-400" />
+                  <span>类型: {selectedShip.shipType}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Ruler className="h-3.5 w-3.5 text-slate-400" />
+                  <span>
+                    尺寸: {String(selectedShip.length)}×{String(selectedShip.width)}×{String(selectedShip.height)}m
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  状态:
+                  <Badge
+                    className="text-xs"
+                    style={{
+                      backgroundColor: statusToColor(selectedShip.status),
+                      color: "white",
+                    }}
+                  >
+                    {SHIP_STATUS_MAP[selectedShip.status]?.label || selectedShip.status}
+                  </Badge>
+                </div>
+                {selectedShip.dockName && (
+                  <p>所在坞: {selectedShip.dockName}</p>
+                )}
+                {selectedShip.berthName && (
+                  <p>靠泊位: {selectedShip.berthName}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 图例 */}
+          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow text-xs border border-slate-200">
+            <p className="font-semibold text-slate-700 mb-2">图例</p>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: "#E74C3C" }} />
+                占用/维修
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: "#27AE60" }} />
+                空闲/在航
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: "#F39C12" }} />
+                维护/靠泊
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: "#9B59B6" }} />
+                维修
+              </div>
+            </div>
+          </div>
+
+          {/* 操作提示 */}
+          <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs text-slate-400 border border-slate-100">
+            🖱 左键旋转 · 滚轮缩放 · 右键平移 · 点击船舶查看详情
           </div>
         </CardContent>
       </Card>

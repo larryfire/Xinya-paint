@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react"
  */
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
-  const { user, isLoading, setUser, setLoading } = useAuthStore()
+  const { user, isLoading, token, setUser, setLoading } = useAuthStore()
   const router = useRouter()
 
   // 页面加载时从服务端获取当前用户信息
@@ -28,7 +28,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
     async function fetchUser() {
       try {
-        const res = await fetch("/api/auth/me")
+        const headers: Record<string, string> = {}
+        // 移动端兼容：通过 Authorization header 传递 token
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`
+        }
+        const res = await fetch("/api/auth/me", { headers })
         if (!cancelled && res.ok) {
           const data = await res.json()
           if (data.success) {

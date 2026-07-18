@@ -43,6 +43,10 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
+      // 设置超时防止请求挂起
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
+
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,7 +55,10 @@ export default function RegisterPage() {
           realName: realName.trim(),
           password,
         }),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       const data = await res.json()
 
@@ -60,8 +67,12 @@ export default function RegisterPage() {
       } else {
         setError(data.error?.message || "注册失败")
       }
-    } catch {
-      setError("网络错误，请稍后重试")
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("请求超时，请检查网络后重试")
+      } else {
+        setError("网络错误，请稍后重试")
+      }
     } finally {
       setLoading(false)
     }

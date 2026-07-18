@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const { setUser } = useAuthStore()
+  const { setUser, setToken } = useAuthStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,6 +35,10 @@ export default function LoginPage() {
 
       if (data.success) {
         setUser(data.data.user)
+        // 存储 token 到 localStorage 供移动端使用
+        if (data.data.token) {
+          setToken(data.data.token)
+        }
         router.push("/")
       } else {
         setError(data.error?.message || "登录失败")

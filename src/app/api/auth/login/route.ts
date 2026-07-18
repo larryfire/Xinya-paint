@@ -57,6 +57,8 @@ export async function POST(request: NextRequest) {
           teamId: user.teamId,
           teamName: user.team?.name ?? null,
         },
+        // 返回 token 供移动端 localStorage 存储（cookie 可能被移动端浏览器阻止）
+        token,
       },
       "登录成功"
     )

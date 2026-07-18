@@ -16,11 +16,26 @@ export class ForbiddenError extends Error {
   }
 }
 
+/** 从请求中提取 Token（优先 Cookie，其次 Authorization Header） */
+function extractToken(request: NextRequest): string | null {
+  // 优先从 httpOnly Cookie 读取
+  const cookieToken = request.cookies.get("token")?.value
+  if (cookieToken) return cookieToken
+
+  // 兼容移动端：从 Authorization: Bearer <token> 读取
+  const authHeader = request.headers.get("Authorization")
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7)
+  }
+
+  return null
+}
+
 /** 从请求中提取并验证 JWT，返回用户信息 */
 export async function authenticate(
   request: NextRequest
 ): Promise<JwtPayload> {
-  const token = request.cookies.get("token")?.value
+  const token = extractToken(request)
   if (!token) {
     throw new UnauthorizedError("请先登录")
   }
