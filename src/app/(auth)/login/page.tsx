@@ -56,7 +56,7 @@ export default function LoginPage() {
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800">
           <Ship className="h-6 w-6 text-white" />
         </div>
-        <CardTitle className="text-xl">心雅涂装管理系统</CardTitle>
+        <CardTitle className="text-xl">鑫亚涂装管理系统</CardTitle>
         <CardDescription>请输入账号和密码登录</CardDescription>
       </CardHeader>
       <CardContent>

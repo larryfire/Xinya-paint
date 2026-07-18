@@ -13,9 +13,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl
     const { page, pageSize, skip } = getPaginationParams(searchParams)
     const shipId = searchParams.get("shipId") ? parseInt(searchParams.get("shipId")!) : undefined
+    const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : undefined
 
     const where: Record<string, unknown> = { ...getCostFilter(auth.role, auth.userId, auth.teamId) }
     if (shipId) where.shipId = shipId
+    if (year) {
+      where.dockEntryTime = {
+        gte: new Date(`${year}-01-01`),
+        lte: new Date(`${year}-12-31`),
+      }
+    }
 
     const [items, total] = await Promise.all([
       prisma.externalPlateCost.findMany({
@@ -34,6 +41,7 @@ export async function GET(request: NextRequest) {
 
     const data = items.map((c) => ({
       id: c.id,
+      repairNumber: c.repairNumber,
       shipId: c.shipId,
       shipName: c.ship.name,
       shipLength: Number(c.ship.length),

@@ -1,9 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
-import { getMenuItems } from "@/lib/permissions"
+import { getMenuItems, type MenuItem } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -15,7 +16,12 @@ import {
   Ship,
   Map,
   UserCheck,
+  BarChart3,
+  Archive,
+  Droplets,
+  Wrench,
   ChevronLeft,
+  ChevronDown,
 } from "lucide-react"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -26,11 +32,82 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Ship,
   Map,
   UserCheck,
+  BarChart3,
+  Archive,
+  Droplets,
+  Wrench,
 }
 
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+}
+
+function SidebarLink({ item, collapsed, pathname }: { item: MenuItem; collapsed: boolean; pathname: string }) {
+  const Icon = iconMap[item.icon]
+  const isActive = item.href
+    ? item.href === "/"
+      ? pathname === "/"
+      : pathname.startsWith(item.href)
+    : false
+
+  return (
+    <Link key={item.href} href={item.href!}>
+      <Button
+        variant={isActive ? "secondary" : "ghost"}
+        className={cn(
+          "w-full justify-start gap-3 mb-0.5",
+          isActive
+            ? "bg-slate-700 text-white hover:bg-slate-700"
+            : "text-slate-400 hover:text-white hover:bg-slate-800",
+          collapsed && "justify-center px-2"
+        )}
+        title={collapsed ? item.label : undefined}
+      >
+        {Icon && <Icon className="h-5 w-5 shrink-0" />}
+        {!collapsed && <span>{item.label}</span>}
+      </Button>
+    </Link>
+  )
+}
+
+function SidebarGroup({ item, collapsed, pathname }: { item: MenuItem; collapsed: boolean; pathname: string }) {
+  const Icon = iconMap[item.icon]
+  const hasActiveChild = item.children?.some((c) => c.href && pathname.startsWith(c.href))
+  const [open, setOpen] = useState(hasActiveChild || false)
+
+  if (collapsed) {
+    // 折叠状态下显示为普通按钮，点击跳转到第一个子菜单
+    const firstChild = item.children?.[0]
+    if (firstChild?.href) {
+      return <SidebarLink item={{ ...firstChild, icon: item.icon }} collapsed={collapsed} pathname={pathname} />
+    }
+    return null
+  }
+
+  return (
+    <div className="mb-0.5">
+      <Button
+        variant="ghost"
+        className={cn(
+          "w-full justify-start gap-3 text-slate-400 hover:text-white hover:bg-slate-800",
+          hasActiveChild && "bg-slate-800 text-white"
+        )}
+        onClick={() => setOpen(!open)}
+      >
+        {Icon && <Icon className="h-5 w-5 shrink-0" />}
+        <span className="flex-1 text-left">{item.label}</span>
+        <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+      </Button>
+      {open && item.children && (
+        <div className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-700 pl-2">
+          {item.children.map((child) => (
+            <SidebarLink key={child.href} item={child} collapsed={false} pathname={pathname} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
@@ -49,7 +126,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Logo */}
       <div className="flex h-14 items-center justify-between px-4 border-b border-slate-700">
         {!collapsed && (
-          <span className="text-lg font-bold whitespace-nowrap">心雅涂装</span>
+          <span className="text-lg font-bold whitespace-nowrap">鑫亚涂装</span>
         )}
         <Button
           variant="ghost"
@@ -70,30 +147,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <ScrollArea className="flex-1 px-2 py-4">
         <nav className="space-y-1">
           {menuItems.map((item) => {
-            const Icon = iconMap[item.icon]
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href)
-
-            return (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start gap-3 mb-0.5",
-                    isActive
-                      ? "bg-slate-700 text-white hover:bg-slate-700"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800",
-                    collapsed && "justify-center px-2"
-                  )}
-                  title={collapsed ? item.label : undefined}
-                >
-                  {Icon && <Icon className="h-5 w-5 shrink-0" />}
-                  {!collapsed && <span>{item.label}</span>}
-                </Button>
-              </Link>
-            )
+            if (item.children && item.children.length > 0) {
+              return <SidebarGroup key={item.label} item={item} collapsed={collapsed} pathname={pathname} />
+            }
+            return <SidebarLink key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
           })}
         </nav>
       </ScrollArea>

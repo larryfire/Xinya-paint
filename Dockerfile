@@ -27,8 +27,16 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package.json ./
+
+# 创建数据目录并授权（Volume 挂载点，需要可写）
+RUN mkdir -p /data && chmod 777 /data
+
+# 启动脚本（数据库迁移 + Next.js 启动）
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 USER nextjs
 
@@ -37,4 +45,4 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["npx", "prisma", "migrate", "deploy", "&&", "node_modules/.bin/next", "start"]
+ENTRYPOINT ["/bin/sh", "./entrypoint.sh"]

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "心雅涂装 - 船舶管理系统",
+  title: "鑫亚涂装 - 船舶管理系统",
   description: "船舶涂装管理系统 - 成本管理、安全管理、人员管理、单船管理、3D动态图",
 }
 

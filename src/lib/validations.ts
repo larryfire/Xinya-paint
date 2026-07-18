@@ -50,6 +50,7 @@ export const updateShipSchema = createShipSchema.partial()
 
 // ==================== 外板成本 ====================
 export const createExternalPlateCostSchema = z.object({
+  repairNumber: z.string().max(50).optional(),
   shipId: z.number().positive("请选择船舶"),
   supervisorId: z.number().positive("请选择涂装主管"),
   dockEntryTime: z.string().min(1, "请选择进坞时间"),
@@ -64,10 +65,12 @@ export const updateExternalPlateCostSchema = createExternalPlateCostSchema.parti
 
 // ==================== 货舱成本 ====================
 export const createCargoHoldCostSchema = z.object({
+  repairNumber: z.string().max(50).optional(),
   shipId: z.number().positive("请选择船舶"),
   supervisorId: z.number().positive("请选择涂装主管"),
   cargoRatio: z.number().min(0).max(100, "比例最大为100"),
   originalRatio: z.number().min(0).max(100, "原始比例最大为100"),
+  teamId: z.number().positive("请选择施工队伍").optional().nullable(),
   settlementCost: z.number().min(0, "结算成本不能为负"),
   constructionCost: z.number().min(0, "施工成本不能为负"),
   remarks: z.string().optional(),
@@ -77,6 +80,7 @@ export const updateCargoHoldCostSchema = createCargoHoldCostSchema.partial()
 
 // ==================== 敲铲成本 ====================
 export const createRustRemovalCostSchema = z.object({
+  repairNumber: z.string().max(50).optional(),
   shipId: z.number().positive("请选择船舶"),
   area: z.string().min(1, "敲铲区域不能为空").max(200),
   projectName: z.string().min(1, "工程项目不能为空").max(200),
@@ -87,6 +91,18 @@ export const createRustRemovalCostSchema = z.object({
 })
 
 export const updateRustRemovalCostSchema = createRustRemovalCostSchema.partial()
+
+// ==================== 水刀成本 ====================
+export const createWaterJetCostSchema = z.object({
+  repairNumber: z.string().max(50).optional(),
+  shipId: z.number().positive("请选择船舶"),
+  dockEntryTime: z.string().min(1, "请选择进坞时间"),
+  project: z.string().min(1, "水刀工程不能为空").max(200),
+  teamId: z.number().positive("请选择施工队伍"),
+  settlementCost: z.number().min(0, "结算成本不能为负"),
+  constructionCost: z.number().min(0, "施工成本不能为负"),
+  remarks: z.string().optional(),
+})
 
 // ==================== 安全处罚 ====================
 export const createSafetyPunishmentSchema = z.object({
@@ -126,5 +142,6 @@ export type CreateShipInput = z.infer<typeof createShipSchema>
 export type CreateExternalPlateCostInput = z.infer<typeof createExternalPlateCostSchema>
 export type CreateCargoHoldCostInput = z.infer<typeof createCargoHoldCostSchema>
 export type CreateRustRemovalCostInput = z.infer<typeof createRustRemovalCostSchema>
+export type CreateWaterJetCostInput = z.infer<typeof createWaterJetCostSchema>
 export type CreateSafetyPunishmentInput = z.infer<typeof createSafetyPunishmentSchema>
 export type CreateDockInput = z.infer<typeof createDockSchema>

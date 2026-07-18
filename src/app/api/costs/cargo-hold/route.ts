@@ -13,9 +13,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl
     const { page, pageSize, skip } = getPaginationParams(searchParams)
     const shipId = searchParams.get("shipId") ? parseInt(searchParams.get("shipId")!) : undefined
+    const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : undefined
 
     const where: Record<string, unknown> = { ...getCostFilter(auth.role, auth.userId, auth.teamId) }
     if (shipId) where.shipId = shipId
+    if (year) {
+      where.createdAt = {
+        gte: new Date(`${year}-01-01`),
+        lte: new Date(`${year}-12-31`),
+      }
+    }
 
     const [items, total] = await Promise.all([
       prisma.cargoHoldCost.findMany({
@@ -23,6 +30,7 @@ export async function GET(request: NextRequest) {
         include: {
           ship: { select: { id: true, name: true, length: true, width: true } },
           supervisor: { select: { realName: true } },
+          team: { select: { name: true } },
         },
         skip, take: pageSize, orderBy: { createdAt: "desc" },
       }),
@@ -31,6 +39,7 @@ export async function GET(request: NextRequest) {
 
     const data = items.map((c) => ({
       id: c.id,
+      repairNumber: c.repairNumber,
       shipId: c.shipId,
       shipName: c.ship.name,
       shipLength: Number(c.ship.length),
@@ -40,6 +49,8 @@ export async function GET(request: NextRequest) {
       cargoRatio: Number(c.cargoRatio),
       originalRatio: Number(c.originalRatio),
       originalPhoto: c.originalPhoto,
+      teamId: c.teamId,
+      teamName: c.team?.name ?? null,
       settlementCost: Number(c.settlementCost),
       constructionCost: Number(c.constructionCost),
       profitLoss: Number(c.settlementCost) - Number(c.constructionCost),

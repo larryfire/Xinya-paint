@@ -1,4 +1,4 @@
-// 心雅涂装 - 船舶管理系统数据库模型
+// 鑫亚涂装 - 船舶管理系统数据库模型
 
 generator client {
   provider = "prisma-client"
@@ -48,7 +48,9 @@ model Team {
   leader              User?                @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: SetNull)
   members             User[]
   externalPlateCosts  ExternalPlateCost[]
+  cargoHoldCosts      CargoHoldCost[]
   rustRemovalCosts    RustRemovalCost[]
+  waterJetCosts       WaterJetCost[]
   safetyPunishments   SafetyPunishment[]
   shipTeams           ShipTeam[]
 
@@ -76,6 +78,7 @@ model Ship {
   externalPlateCosts ExternalPlateCost[]
   cargoHoldCosts     CargoHoldCost[]
   rustRemovalCosts   RustRemovalCost[]
+  waterJetCosts      WaterJetCost[]
   shipTeams          ShipTeam[]
 
   @@map("ships")
@@ -102,6 +105,7 @@ model Dock {
 // ==================== 外板成本表 ====================
 model ExternalPlateCost {
   id               Int      @id @default(autoincrement())
+  repairNumber     String?  @map("repair_number")
   shipId           Int      @map("ship_id")
   supervisorId     Int      @map("supervisor_id")
   dockEntryTime    DateTime @map("dock_entry_time")
@@ -126,11 +130,13 @@ model ExternalPlateCost {
 // ==================== 货舱成本表 ====================
 model CargoHoldCost {
   id               Int      @id @default(autoincrement())
+  repairNumber     String?  @map("repair_number")
   shipId           Int      @map("ship_id")
   supervisorId     Int      @map("supervisor_id")
   cargoRatio       Float    @map("cargo_ratio")
   originalRatio    Float    @map("original_ratio")
   originalPhoto    String?  @map("original_photo")
+  teamId           Int?     @map("team_id")
   settlementCost   Float    @map("settlement_cost")
   constructionCost Float    @map("construction_cost")
   remarks          String?
@@ -139,15 +145,18 @@ model CargoHoldCost {
 
   ship       Ship @relation(fields: [shipId], references: [id], onDelete: Restrict)
   supervisor User @relation("CargoSupervisor", fields: [supervisorId], references: [id], onDelete: Restrict)
+  team       Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
 
   @@index([shipId])
   @@index([supervisorId])
+  @@index([teamId])
   @@map("cargo_hold_costs")
 }
 
 // ==================== 敲铲成本表 ====================
 model RustRemovalCost {
   id          Int      @id @default(autoincrement())
+  repairNumber String? @map("repair_number")
   shipId      Int      @map("ship_id")
   area        String
   projectName String   @map("project_name")
@@ -185,6 +194,28 @@ model SafetyPunishment {
   @@index([punishmentTime])
   @@index([category])
   @@map("safety_punishments")
+}
+
+// ==================== 水刀成本表 ====================
+model WaterJetCost {
+  id               Int      @id @default(autoincrement())
+  repairNumber     String?  @map("repair_number")
+  shipId           Int      @map("ship_id")
+  dockEntryTime    DateTime @default(now()) @map("dock_entry_time")
+  project          String
+  teamId           Int      @map("team_id")
+  settlementCost   Float    @map("settlement_cost")
+  constructionCost Float    @map("construction_cost")
+  remarks          String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  ship Ship @relation(fields: [shipId], references: [id], onDelete: Restrict)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@index([shipId])
+  @@index([teamId])
+  @@map("water_jet_costs")
 }
 
 // ==================== 船舶-施工队关联表 ====================

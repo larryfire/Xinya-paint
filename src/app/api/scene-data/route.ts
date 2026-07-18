@@ -24,16 +24,17 @@ export async function GET(request: NextRequest) {
 
     return success({
       docks,
-      ships: ships.map((s) => ({
-        ...s,
-        length: Number(s.length),
-        width: Number(s.width),
-        height: Number(s.height),
-        dockName: s.dock?.name ?? null,
-        berthName: s.berth?.name ?? null,
-        dock: undefined,
-        berth: undefined,
-      })),
+      ships: ships.map((s) => {
+        const { dock, berth, ...rest } = s as Record<string, unknown>
+        return {
+          ...rest,
+          length: Number(s.length),
+          width: Number(s.width),
+          height: Number(s.height),
+          dockName: (dock as { name: string } | null)?.name ?? null,
+          berthName: (berth as { name: string } | null)?.name ?? null,
+        }
+      }),
     })
   } catch (err) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {

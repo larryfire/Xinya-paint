@@ -65,7 +65,9 @@ export async function POST(request: NextRequest) {
 
     res.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // secure 仅在 HTTPS 环境下启用，HTTP 环境下设为 false
+      // 可通过环境变量 FORCE_SECURE_COOKIE=true 强制开启
+      secure: process.env.FORCE_SECURE_COOKIE === "true",
       sameSite: "lax",
       maxAge: 60 * 60 * 24, // 24小时
       path: "/",

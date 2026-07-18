@@ -56,6 +56,7 @@ export interface DockInfo {
 
 export interface ExternalPlateCostInfo {
   id: number
+  repairNumber?: string | null
   shipId: number
   shipName?: string
   shipLength?: number
@@ -77,6 +78,7 @@ export interface ExternalPlateCostInfo {
 
 export interface CargoHoldCostInfo {
   id: number
+  repairNumber?: string | null
   shipId: number
   shipName?: string
   shipLength?: number
@@ -86,6 +88,8 @@ export interface CargoHoldCostInfo {
   cargoRatio: number
   originalRatio: number
   originalPhoto?: string | null
+  teamId?: number | null
+  teamName?: string | null
   settlementCost: number
   constructionCost: number
   profitLoss?: number
@@ -97,6 +101,7 @@ export interface CargoHoldCostInfo {
 
 export interface RustRemovalCostInfo {
   id: number
+  repairNumber?: string | null
   shipId: number
   shipName?: string
   shipLength?: number
@@ -110,6 +115,34 @@ export interface RustRemovalCostInfo {
   totalCost?: number
   remarks?: string | null
   createdAt: string
+}
+
+export interface WaterJetCostInfo {
+  id: number
+  repairNumber?: string | null
+  shipId: number
+  shipName?: string
+  shipLength?: number
+  shipWidth?: number
+  dockEntryTime: string
+  project: string
+  teamId: number
+  teamName?: string
+  settlementCost: number
+  constructionCost: number
+  profitLoss?: number
+  profitLossRate?: number
+  remarks?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TeamSettlementInfo {
+  period: string
+  teamId: number
+  teamName: string
+  settlementCost: number
+  constructionCost: number
 }
 
 export interface SafetyPunishmentInfo {

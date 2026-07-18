@@ -71,5 +71,17 @@ export const EXTERNAL_PLATE_AREAS = [
   "上层建筑",
 ] as const
 
+/** 水刀工程项目 */
+export const WATER_JET_PROJECTS = [
+  "船首水刀除锈",
+  "船底水刀清理",
+  "船尾水刀除锈",
+  "左舷水刀清理",
+  "右舷水刀清理",
+  "甲板水刀除锈",
+  "水线间水刀",
+  "上层建筑水刀",
+] as const
+
 /** 分页默认值 */
 export const DEFAULT_PAGE_SIZE = 20

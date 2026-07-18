@@ -7,57 +7,58 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { EXTERNAL_PLATE_AREAS } from "@/lib/constants"
+import { WATER_JET_PROJECTS, DEFAULT_PAGE_SIZE } from "@/lib/constants"
 import { Plus, Search, Loader2 } from "lucide-react"
-import type { ExternalPlateCostInfo, ShipInfo, TeamInfo, UserInfo } from "@/types"
+import type { WaterJetCostInfo, ShipInfo, TeamInfo } from "@/types"
 
-export default function ExternalPlateCostPage() {
-  const [costs, setCosts] = useState<ExternalPlateCostInfo[]>([])
+export default function WaterJetCostPage() {
+  const currentYear = new Date().getFullYear()
+
+  const [costs, setCosts] = useState<WaterJetCostInfo[]>([])
   const [ships, setShips] = useState<ShipInfo[]>([])
-  const [supervisors, setSupervisors] = useState<UserInfo[]>([])
   const [teams, setTeams] = useState<TeamInfo[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
-  const [year, setYear] = useState(new Date().getFullYear())
+  const [year, setYear] = useState(currentYear)
+  const [shipId, setShipId] = useState("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   // 表单状态
   const [form, setForm] = useState({
-    shipId: "", repairNumber: "", supervisorId: "", dockEntryTime: "",
-    area: "", teamId: "", settlementCost: "", constructionCost: "", remarks: "",
+    repairNumber: "", shipId: "", dockEntryTime: "",
+    project: "", teamId: "", settlementCost: "", constructionCost: "", remarks: "",
   })
   const [submitting, setSubmitting] = useState(false)
 
   const fetchCosts = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ page: String(page), pageSize: "20", year: String(year) })
-      if (search) params.set("search", search)
-      const res = await fetch(`/api/costs/external-plate?${params}`)
+      const params = new URLSearchParams({ page: String(page), pageSize: String(DEFAULT_PAGE_SIZE) })
+      if (year) params.set("year", String(year))
+      if (shipId) params.set("shipId", shipId)
+      const res = await fetch(`/api/costs/water-jet?${params}`)
       const data = await res.json()
       if (data.success) {
         setCosts(data.data.items)
         setTotalPages(data.data.pagination.totalPages)
       }
     } finally { setLoading(false) }
-  }, [page, search, year])
+  }, [page, year, shipId])
 
   const fetchOptions = useCallback(async () => {
     try {
-      const [shipsRes, usersRes, teamsRes] = await Promise.all([
+      const [shipsRes, teamsRes] = await Promise.all([
         fetch("/api/ships?pageSize=100"),
-        fetch("/api/users?role=supervisor&pageSize=100"),
         fetch("/api/teams?pageSize=100"),
       ])
-      const [shipsData, usersData, teamsData] = await Promise.all([
-        shipsRes.json(), usersRes.json(), teamsRes.json(),
+      const [shipsData, teamsData] = await Promise.all([
+        shipsRes.json(), teamsRes.json(),
       ])
       if (shipsData.success) setShips(shipsData.data.items)
-      if (usersData.success) setSupervisors(usersData.data.items)
       if (teamsData.success) setTeams(teamsData.data.items)
     } catch { /* ignore */ }
   }, [])
@@ -65,54 +66,67 @@ export default function ExternalPlateCostPage() {
   useEffect(() => { fetchCosts(); fetchOptions() }, [fetchCosts, fetchOptions])
 
   const handleSubmit = async () => {
-    if (!form.shipId || !form.supervisorId || !form.dockEntryTime || !form.area || !form.teamId || !form.settlementCost || !form.constructionCost) return
+    if (!form.shipId || !form.dockEntryTime || !form.project || !form.teamId || !form.settlementCost || !form.constructionCost) return
     setSubmitting(true)
     try {
-      const res = await fetch("/api/costs/external-plate", {
+      const res = await fetch("/api/costs/water-jet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shipId: Number(form.shipId), repairNumber: form.repairNumber || undefined,
-          supervisorId: Number(form.supervisorId),
-          dockEntryTime: form.dockEntryTime, area: form.area,
-          teamId: Number(form.teamId), settlementCost: Number(form.settlementCost),
-          constructionCost: Number(form.constructionCost), remarks: form.remarks || undefined,
+          repairNumber: form.repairNumber || undefined,
+          shipId: Number(form.shipId),
+          dockEntryTime: form.dockEntryTime,
+          project: form.project,
+          teamId: Number(form.teamId),
+          settlementCost: Number(form.settlementCost),
+          constructionCost: Number(form.constructionCost),
+          remarks: form.remarks || undefined,
         }),
       })
       const data = await res.json()
       if (data.success) {
         setDialogOpen(false)
-        setForm({ shipId: "", repairNumber: "", supervisorId: "", dockEntryTime: "", area: "", teamId: "", settlementCost: "", constructionCost: "", remarks: "" })
+        setForm({ repairNumber: "", shipId: "", dockEntryTime: "", project: "", teamId: "", settlementCost: "", constructionCost: "", remarks: "" })
         fetchCosts()
       }
     } finally { setSubmitting(false) }
   }
 
-  // 盈亏分析文案
-  const getProfitAnalysis = (c: ExternalPlateCostInfo) => {
-    if (c.profitLoss == null || c.profitLoss === 0) return { text: "持平", className: "text-slate-500" }
-    if (c.profitLoss > 0) return { text: "盈利", className: "text-green-600 font-medium" }
-    return { text: `亏损${formatCurrency(Math.abs(c.profitLoss))}元`, className: "text-red-600 font-medium" }
+  /** 盈亏分析文案 */
+  const getProfitLossAnalysis = (profitLoss: number) => {
+    if (profitLoss > 0) return "盈利"
+    if (profitLoss < 0) return `亏损${formatCurrency(Math.abs(profitLoss))}元`
+    return "持平"
   }
 
-  // 年份可选范围：当前年份前后5年
-  const currentYear = new Date().getFullYear()
-  const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
+  /** 盈亏Badge颜色 */
+  const getProfitLossVariant = (profitLoss: number) => {
+    if (profitLoss > 0) return "default"
+    if (profitLoss < 0) return "destructive"
+    return "secondary" as const
+  }
+
+  /** 年份选项（近10年） */
+  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear - i)
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">单船外板盈亏</h1>
-          <p className="text-sm text-slate-500">管理船舶外板涂装成本、结算与盈亏分析</p>
+          <h1 className="text-2xl font-bold">单船水刀盈亏</h1>
+          <p className="text-sm text-slate-500">管理船舶水刀除锈成本与盈亏分析</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger >
-            <Button><Plus className="mr-2 h-4 w-4" />新增记录</Button>
+          <DialogTrigger>
+            <Button><Plus className="mr-2 h-4 w-4" />新增</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>新增外板成本记录</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>新增水刀成本记录</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-4 py-4">
+              <div className="space-y-2">
+                <Label>修理编号</Label>
+                <Input value={form.repairNumber} onChange={(e) => setForm({ ...form, repairNumber: e.target.value })} placeholder="请输入修理编号" />
+              </div>
               <div className="space-y-2">
                 <Label>船舶</Label>
                 <Select value={form.shipId} onValueChange={(v) => setForm({ ...form, shipId: v })}>
@@ -123,33 +137,20 @@ export default function ExternalPlateCostPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>修理编号</Label>
-                <Input value={form.repairNumber} onChange={(e) => setForm({ ...form, repairNumber: e.target.value })} placeholder="请输入修理编号" />
-              </div>
-              <div className="space-y-2">
-                <Label>涂装主管</Label>
-                <Select value={form.supervisorId} onValueChange={(v) => setForm({ ...form, supervisorId: v })}>
-                  <SelectTrigger><SelectValue placeholder="选择主管" /></SelectTrigger>
-                  <SelectContent>
-                    {supervisors.map((u) => <SelectItem key={u.id} value={String(u.id)}>{u.realName}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
                 <Label>进坞时间</Label>
                 <Input type="date" value={form.dockEntryTime} onChange={(e) => setForm({ ...form, dockEntryTime: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>外板区域</Label>
-                <Select value={form.area} onValueChange={(v) => setForm({ ...form, area: v })}>
-                  <SelectTrigger><SelectValue placeholder="选择区域" /></SelectTrigger>
+                <Label>水刀工程</Label>
+                <Select value={form.project} onValueChange={(v) => setForm({ ...form, project: v })}>
+                  <SelectTrigger><SelectValue placeholder="选择水刀工程" /></SelectTrigger>
                   <SelectContent>
-                    {EXTERNAL_PLATE_AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    {WATER_JET_PROJECTS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>内协队伍</Label>
+                <Label>施工队伍</Label>
                 <Select value={form.teamId} onValueChange={(v) => setForm({ ...form, teamId: v })}>
                   <SelectTrigger><SelectValue placeholder="选择队伍" /></SelectTrigger>
                   <SelectContent>
@@ -180,18 +181,24 @@ export default function ExternalPlateCostPage() {
       <Card>
         <CardHeader className="pb-0">
           <div className="flex items-center gap-4">
+            <div className="w-32">
+              <Select value={String(year)} onValueChange={(v) => { setYear(Number(v)); setPage(1) }}>
+                <SelectTrigger><SelectValue placeholder="年份" /></SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((y) => <SelectItem key={y} value={String(y)}>{y}年</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input placeholder="搜索船舶名称..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+              <Select value={shipId} onValueChange={(v) => { setShipId(v === "all" ? "" : v); setPage(1) }}>
+                <SelectTrigger className="pl-9"><SelectValue placeholder="搜索船舶..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部船舶</SelectItem>
+                  {ships.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={String(year)} onValueChange={(v) => { setYear(Number(v)); setPage(1) }}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="年份" />
-              </SelectTrigger>
-              <SelectContent>
-                {yearOptions.map((y) => <SelectItem key={y} value={String(y)}>{y}年</SelectItem>)}
-              </SelectContent>
-            </Select>
           </div>
         </CardHeader>
         <CardContent>
@@ -203,33 +210,39 @@ export default function ExternalPlateCostPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>修理编号</TableHead>
+                    <TableHead>时间</TableHead>
                     <TableHead>船名</TableHead>
-                    <TableHead>尺寸(m)</TableHead>
-                    <TableHead>主管</TableHead>
-                    <TableHead>进坞时间</TableHead>
-                    <TableHead>区域</TableHead>
-                    <TableHead>队伍</TableHead>
+                    <TableHead>船舶尺寸</TableHead>
+                    <TableHead>水刀工程</TableHead>
+                    <TableHead>施工队伍</TableHead>
                     <TableHead className="text-right">结算成本</TableHead>
                     <TableHead className="text-right">施工成本</TableHead>
+                    <TableHead className="text-right">单船盈亏</TableHead>
                     <TableHead className="text-right">盈亏分析</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {costs.length === 0 ? (
-                    <TableRow><TableCell colSpan={11} className="text-center text-slate-400">暂无数据</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={10} className="text-center text-slate-400">暂无数据</TableCell></TableRow>
                   ) : costs.map((c) => (
                     <TableRow key={c.id}>
-                      <TableCell className="font-mono text-sm">{c.repairNumber ?? "-"}</TableCell>
-                      <TableCell className="font-medium">{c.shipName}</TableCell>
-                      <TableCell>{c.shipLength}×{c.shipWidth}</TableCell>
-                      <TableCell>{c.supervisorName}</TableCell>
+                      <TableCell className="font-medium">{c.repairNumber || "-"}</TableCell>
                       <TableCell>{formatDate(c.dockEntryTime)}</TableCell>
-                      <TableCell>{c.area}</TableCell>
+                      <TableCell>{c.shipName}</TableCell>
+                      <TableCell>{c.shipLength}×{c.shipWidth}</TableCell>
+                      <TableCell>{c.project}</TableCell>
                       <TableCell>{c.teamName}</TableCell>
                       <TableCell className="text-right">{formatCurrency(c.settlementCost)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(c.constructionCost)}</TableCell>
                       <TableCell className="text-right">
-                        <span className={getProfitAnalysis(c).className}>{getProfitAnalysis(c).text}</span>
+                        <Badge variant={getProfitLossVariant(c.profitLoss!)}>
+                          {formatCurrency(c.profitLoss!)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className={c.profitLoss! > 0 ? "text-green-600" : c.profitLoss! < 0 ? "text-red-600" : "text-slate-500"}>
+                          {getProfitLossAnalysis(c.profitLoss!)}
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))}

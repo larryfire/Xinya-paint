@@ -1,5 +1,5 @@
 /**
- * 心雅涂装管理系统 - 全功能自动化测试脚本
+ * 鑫亚涂装管理系统 - 全功能自动化测试脚本
  * 运行: npx tsx scripts/test-all.ts
  */
 import "dotenv/config"
@@ -86,7 +86,7 @@ function t(s: TestSuite, name: string, fn: () => Promise<void>) {
 
 async function main() {
   console.log("╔══════════════════════════════════════╗")
-  console.log("║   心雅涂装系统 - 自动化测试           ║")
+  console.log("║   鑫亚涂装系统 - 自动化测试           ║")
   console.log("╚══════════════════════════════════════╝")
   console.log(`\n测试服务器: ${BASE_URL}\n`)
 

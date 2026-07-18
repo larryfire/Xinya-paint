@@ -29,13 +29,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     })
     if (!ship) return error("NOT_FOUND", "船舶不存在", 404)
 
+    const { dock, berth, shipTeams: sts, ...rest } = ship as Record<string, unknown>
     return success({
-      ...ship,
+      ...rest,
       length: Number(ship.length),
       width: Number(ship.width),
       height: Number(ship.height),
-      dockName: ship.dock?.name ?? null,
-      berthName: ship.berth?.name ?? null,
+      dockName: (dock as { name: string } | null)?.name ?? null,
+      berthName: (berth as { name: string } | null)?.name ?? null,
       teams: ship.shipTeams.map((st) => ({
         id: st.id,
         teamId: st.team.id,
@@ -44,7 +45,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         memberCount: st.team._count.members,
         assignedAt: st.assignedAt,
       })),
-      dock: undefined, berth: undefined, shipTeams: undefined,
     })
   } catch (err) {
     if (err instanceof Error && err.name === "UnauthorizedError") return error("UNAUTHORIZED", err.message, 401)

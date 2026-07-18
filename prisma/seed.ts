@@ -1,4 +1,4 @@
-// 心雅涂装 - 种子数据
+// 鑫亚涂装 - 种子数据
 import "dotenv/config"
 import { PrismaClient } from "../src/generated/prisma/client"
 import { PrismaLibSql } from "@prisma/adapter-libsql"

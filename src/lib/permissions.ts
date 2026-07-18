@@ -12,6 +12,9 @@ export type Permission =
   | "cost:cargo_hold:write"
   | "cost:rust_removal:read"
   | "cost:rust_removal:write"
+  | "cost:water_jet:read"
+  | "cost:water_jet:write"
+  | "cost:team_settlement:read"
   | "safety:view"
   | "safety:manage"
   | "dock:read"
@@ -34,6 +37,9 @@ const rolePermissions: Record<Role, Permission[]> = {
     "cost:cargo_hold:write",
     "cost:rust_removal:read",
     "cost:rust_removal:write",
+    "cost:water_jet:read",
+    "cost:water_jet:write",
+    "cost:team_settlement:read",
     "safety:view",
     "safety:manage",
     "dock:read",
@@ -49,6 +55,9 @@ const rolePermissions: Record<Role, Permission[]> = {
     "cost:cargo_hold:write",
     "cost:rust_removal:read",
     "cost:rust_removal:write",
+    "cost:water_jet:read",
+    "cost:water_jet:write",
+    "cost:team_settlement:read",
     "safety:view",
     "safety:manage",
     "dock:read",
@@ -61,6 +70,8 @@ const rolePermissions: Record<Role, Permission[]> = {
     "cost:external_plate:read",
     "cost:cargo_hold:read",
     "cost:rust_removal:read",
+    "cost:water_jet:read",
+    "cost:team_settlement:read",
     "safety:view",
     "dock:read",
     "scene:view",
@@ -80,18 +91,25 @@ export function hasPermission(role: string, permission: Permission): boolean {
 /** 获取角色对应的菜单项 */
 export interface MenuItem {
   label: string
-  href: string
+  href?: string
   icon: string
   permission?: Permission
+  children?: MenuItem[]
 }
 
 export const allMenuItems: MenuItem[] = [
   { label: "首页仪表盘", href: "/", icon: "LayoutDashboard" },
   {
     label: "成本管理",
-    href: "/cost-management/external-plate",
     icon: "DollarSign",
-    permission: "cost:external_plate:read",
+    permission: "cost:team_settlement:read",
+    children: [
+      { label: "内协队伍结算", href: "/cost-management/team-settlement", icon: "BarChart3", permission: "cost:team_settlement:read" },
+      { label: "单船外板盈亏", href: "/cost-management/external-plate", icon: "Ship", permission: "cost:external_plate:read" },
+      { label: "单船货舱盈亏", href: "/cost-management/cargo-hold", icon: "Archive", permission: "cost:cargo_hold:read" },
+      { label: "单船水刀盈亏", href: "/cost-management/water-jet", icon: "Droplets", permission: "cost:water_jet:read" },
+      { label: "敲铲项目工时", href: "/cost-management/rust-removal", icon: "Wrench", permission: "cost:rust_removal:read" },
+    ],
   },
   {
     label: "安全管理",
@@ -125,12 +143,25 @@ export const allMenuItems: MenuItem[] = [
   },
 ]
 
-/** 根据角色过滤菜单 */
+/** 根据角色过滤菜单（递归处理子菜单） */
 export function getMenuItems(role: string): MenuItem[] {
   if (role === "admin") return allMenuItems
-  return allMenuItems.filter(
-    (item) => !item.permission || hasPermission(role, item.permission)
-  )
+  return allMenuItems
+    .map((item) => {
+      if (item.children) {
+        const filteredChildren = item.children.filter(
+          (child) => !child.permission || hasPermission(role, child.permission)
+        )
+        if (filteredChildren.length === 0) return null
+        return { ...item, children: filteredChildren }
+      }
+      return item
+    })
+    .filter((item): item is MenuItem => {
+      if (!item) return false
+      if (item.children) return item.children.length > 0
+      return !item.permission || hasPermission(role, item.permission)
+    })
 }
 
 // ==================== 数据级权限过滤 ====================
