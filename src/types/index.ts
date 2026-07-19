@@ -46,7 +46,7 @@ export interface ShipInfo {
 export interface DockInfo {
   id: number
   name: string
-  type: "dock" | "berth" | "wharf" | "warehouse"
+  type: "dock" | "berth" | "wharf" | "warehouse" | "workshop"
   positionX: number
   positionZ: number
   width: number
@@ -172,7 +172,41 @@ export interface ShipTeamInfo {
 
 export interface SceneData {
   docks: DockInfo[]
-  ships: ShipInfo[]
+  ships: ShipSceneInfo[]
+}
+
+/** 增强版船舶信息（用于3D场景，含出勤和队伍数据） */
+export interface ShipSceneInfo extends ShipInfo {
+  teams?: ShipTeamInfo[]
+  activeAttendance?: ActiveAttendanceInfo[]
+  totalSettlementCost?: number
+  totalConstructionCost?: number
+}
+
+export interface AttendanceInfo {
+  id: number
+  teamId: number
+  teamName?: string
+  shipId?: number | null
+  shipName?: string
+  dockId?: number | null
+  dockName?: string
+  workerCount: number
+  startTime: string
+  endTime?: string | null
+  /** 当前工时（小时）= workerCount × 已过小时数 */
+  currentHours?: number
+  createdAt: string
+}
+
+export interface ActiveAttendanceInfo {
+  id: number
+  teamId: number
+  teamName: string
+  workerCount: number
+  startTime: string
+  /** 实时工时（小时） */
+  currentHours: number
 }
 
 export interface Pagination {

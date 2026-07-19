@@ -53,6 +53,7 @@ model Team {
   waterJetCosts       WaterJetCost[]
   safetyPunishments   SafetyPunishment[]
   shipTeams           ShipTeam[]
+  attendances         Attendance[]
 
   @@map("teams")
 }
@@ -80,6 +81,7 @@ model Ship {
   rustRemovalCosts   RustRemovalCost[]
   waterJetCosts      WaterJetCost[]
   shipTeams          ShipTeam[]
+  attendances        Attendance[]
 
   @@map("ships")
 }
@@ -98,6 +100,7 @@ model Dock {
 
   dockedShips  Ship[] @relation("ShipDock")
   berthedShips Ship[] @relation("ShipBerth")
+  attendances  Attendance[]
 
   @@map("docks")
 }
@@ -232,4 +235,26 @@ model ShipTeam {
   @@index([shipId])
   @@index([teamId])
   @@map("ship_teams")
+}
+
+// ==================== 出勤记录表 ====================
+model Attendance {
+  id          Int       @id @default(autoincrement())
+  teamId      Int       @map("team_id")
+  shipId      Int?      @map("ship_id")
+  dockId      Int?      @map("dock_id")
+  workerCount Int       @map("worker_count")
+  startTime   DateTime  @map("start_time")
+  endTime     DateTime? @map("end_time")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  ship Ship? @relation(fields: [shipId], references: [id], onDelete: SetNull)
+  dock Dock? @relation(fields: [dockId], references: [id], onDelete: SetNull)
+
+  @@index([teamId])
+  @@index([shipId])
+  @@index([dockId])
+  @@index([endTime])
+  @@map("attendances")
 }

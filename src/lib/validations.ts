@@ -120,7 +120,7 @@ export const updateSafetyPunishmentSchema = createSafetyPunishmentSchema.partial
 // ==================== 码头/泊位 ====================
 export const createDockSchema = z.object({
   name: z.string().min(1, "名称不能为空").max(100),
-  type: z.enum(["dock", "berth", "wharf", "warehouse"]),
+  type: z.enum(["dock", "berth", "wharf", "warehouse", "workshop"]),
   positionX: z.number(),
   positionZ: z.number(),
   width: z.number().positive(),
@@ -131,6 +131,28 @@ export const createDockSchema = z.object({
 // ==================== 船舶-施工队关联 ====================
 export const assignTeamSchema = z.object({
   teamId: z.number().positive("请选择施工队伍"),
+})
+
+// ==================== 出勤 ====================
+export const createAttendanceSchema = z.object({
+  teamId: z.number().positive("请选择施工队伍"),
+  shipId: z.number().positive().optional(),
+  dockId: z.number().positive().optional(),
+  workerCount: z.number().positive("出勤人数必须大于0"),
+})
+
+export const updateAttendanceSchema = z.object({
+  workerCount: z.number().positive().optional(),
+  endTime: z.string().optional(), // 结束出勤
+})
+
+// ==================== 船舶位置更新 ====================
+export const updateShipPositionSchema = z.object({
+  positionX: z.number(),
+  positionZ: z.number(),
+  rotation: z.number().optional(),
+  dockId: z.number().positive().optional().nullable(),
+  berthId: z.number().positive().optional().nullable(),
 })
 
 // 类型推导
