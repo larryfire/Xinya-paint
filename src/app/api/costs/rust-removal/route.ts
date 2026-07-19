@@ -14,17 +14,19 @@ export async function GET(request: NextRequest) {
     const { page, pageSize, skip } = getPaginationParams(searchParams)
     const shipId = searchParams.get("shipId") ? parseInt(searchParams.get("shipId")!) : undefined
     const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : undefined
+    const teamId = searchParams.get("teamId") ? parseInt(searchParams.get("teamId")!) : undefined
 
     const where: Record<string, unknown> = {}
     if (shipId) where.shipId = shipId
+    if (teamId) where.teamId = teamId
     if (year) {
       where.createdAt = {
         gte: new Date(`${year}-01-01`),
         lte: new Date(`${year}-12-31`),
       }
     }
-    // 数据过滤：leader只看自己队伍的
-    if (auth.role === "leader" && auth.teamId) {
+    // 数据过滤：leader只看自己队伍的（非leader角色的筛选覆盖此限制）
+    if (auth.role === "leader" && auth.teamId && !teamId) {
       where.teamId = auth.teamId
     }
 

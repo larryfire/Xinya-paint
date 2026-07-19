@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FilterableTableHead, type FilterOption } from "@/components/ui/filterable-table-head"
 import { formatCurrency } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
+import type { TeamInfo } from "@/types"
 
 interface SettlementRecord {
   period: string
@@ -25,6 +27,10 @@ export default function TeamSettlementPage() {
   const [month, setMonth] = useState(currentMonth)
   const [data, setData] = useState<SettlementRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [teams, setTeams] = useState<TeamInfo[]>([])
+
+  // 列筛选状态
+  const [filterTeamId, setFilterTeamId] = useState("")
 
   const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear - i)
   const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1)
@@ -39,6 +45,7 @@ export default function TeamSettlementPage() {
       if (activeTab === "monthly") {
         params.set("month", String(month))
       }
+      if (filterTeamId) params.set("teamId", filterTeamId)
       const res = await fetch(`/api/costs/team-settlement?${params}`)
       const result = await res.json()
       if (result.success) {
@@ -51,11 +58,14 @@ export default function TeamSettlementPage() {
     } finally {
       setLoading(false)
     }
-  }, [activeTab, year, month])
+  }, [activeTab, year, month, filterTeamId])
 
   useEffect(() => {
     fetchData()
+    fetch("/api/teams?pageSize=100").then(r => r.json()).then(d => d.success && setTeams(d.data.items)).catch(() => {})
   }, [fetchData])
+
+  const teamOptions: FilterOption[] = useMemo(() => teams.map((t) => ({ value: String(t.id), label: t.name })), [teams])
 
   return (
     <div className="space-y-4">
@@ -112,7 +122,7 @@ export default function TeamSettlementPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>时间</TableHead>
-                    <TableHead>施工队伍</TableHead>
+                    <FilterableTableHead title="施工队伍" options={teamOptions} value={filterTeamId} onChange={(v) => { setFilterTeamId(v) }} />
                     <TableHead className="text-right">结算成本</TableHead>
                     <TableHead className="text-right">施工成本</TableHead>
                   </TableRow>

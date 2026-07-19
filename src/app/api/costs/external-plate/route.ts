@@ -14,9 +14,15 @@ export async function GET(request: NextRequest) {
     const { page, pageSize, skip } = getPaginationParams(searchParams)
     const shipId = searchParams.get("shipId") ? parseInt(searchParams.get("shipId")!) : undefined
     const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : undefined
+    const supervisorId = searchParams.get("supervisorId") ? parseInt(searchParams.get("supervisorId")!) : undefined
+    const area = searchParams.get("area") || undefined
+    const teamId = searchParams.get("teamId") ? parseInt(searchParams.get("teamId")!) : undefined
 
     const where: Record<string, unknown> = { ...getCostFilter(auth.role, auth.userId, auth.teamId) }
     if (shipId) where.shipId = shipId
+    if (supervisorId) where.supervisorId = supervisorId
+    if (area) where.area = area
+    if (teamId) where.teamId = teamId
     if (year) {
       where.dockEntryTime = {
         gte: new Date(`${year}-01-01`),

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FilterableTableHead, type FilterOption } from "@/components/ui/filterable-table-head"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { EXTERNAL_PLATE_AREAS } from "@/lib/constants"
 import { Plus, Search, Loader2 } from "lucide-react"
@@ -25,6 +26,12 @@ export default function ExternalPlateCostPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [dialogOpen, setDialogOpen] = useState(false)
 
+  // 列筛选状态
+  const [filterShipId, setFilterShipId] = useState("")
+  const [filterSupervisorId, setFilterSupervisorId] = useState("")
+  const [filterArea, setFilterArea] = useState("")
+  const [filterTeamId, setFilterTeamId] = useState("")
+
   // 表单状态
   const [form, setForm] = useState({
     shipId: "", repairNumber: "", supervisorId: "", dockEntryTime: "",
@@ -37,6 +44,10 @@ export default function ExternalPlateCostPage() {
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: "20", year: String(year) })
       if (search) params.set("search", search)
+      if (filterShipId) params.set("shipId", filterShipId)
+      if (filterSupervisorId) params.set("supervisorId", filterSupervisorId)
+      if (filterArea) params.set("area", filterArea)
+      if (filterTeamId) params.set("teamId", filterTeamId)
       const res = await fetch(`/api/costs/external-plate?${params}`)
       const data = await res.json()
       if (data.success) {
@@ -44,7 +55,7 @@ export default function ExternalPlateCostPage() {
         setTotalPages(data.data.pagination.totalPages)
       }
     } finally { setLoading(false) }
-  }, [page, search, year])
+  }, [page, search, year, filterShipId, filterSupervisorId, filterArea, filterTeamId])
 
   const fetchOptions = useCallback(async () => {
     try {
@@ -63,6 +74,12 @@ export default function ExternalPlateCostPage() {
   }, [])
 
   useEffect(() => { fetchCosts(); fetchOptions() }, [fetchCosts, fetchOptions])
+
+  // 筛选选项
+  const shipOptions: FilterOption[] = useMemo(() => ships.map((s) => ({ value: String(s.id), label: s.name })), [ships])
+  const supervisorOptions: FilterOption[] = useMemo(() => supervisors.map((u) => ({ value: String(u.id), label: u.realName })), [supervisors])
+  const areaOptions: FilterOption[] = useMemo(() => EXTERNAL_PLATE_AREAS.map((a) => ({ value: a, label: a })), [])
+  const teamOptions: FilterOption[] = useMemo(() => teams.map((t) => ({ value: String(t.id), label: t.name })), [teams])
 
   const handleSubmit = async () => {
     if (!form.shipId || !form.supervisorId || !form.dockEntryTime || !form.area || !form.teamId || !form.settlementCost || !form.constructionCost) return
@@ -203,12 +220,12 @@ export default function ExternalPlateCostPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>修理编号</TableHead>
-                    <TableHead>船名</TableHead>
+                    <FilterableTableHead title="船名" options={shipOptions} value={filterShipId} onChange={(v) => { setFilterShipId(v); setPage(1) }} />
                     <TableHead>尺寸(m)</TableHead>
-                    <TableHead>主管</TableHead>
+                    <FilterableTableHead title="主管" options={supervisorOptions} value={filterSupervisorId} onChange={(v) => { setFilterSupervisorId(v); setPage(1) }} />
                     <TableHead>进坞时间</TableHead>
-                    <TableHead>区域</TableHead>
-                    <TableHead>队伍</TableHead>
+                    <FilterableTableHead title="区域" options={areaOptions} value={filterArea} onChange={(v) => { setFilterArea(v); setPage(1) }} />
+                    <FilterableTableHead title="队伍" options={teamOptions} value={filterTeamId} onChange={(v) => { setFilterTeamId(v); setPage(1) }} />
                     <TableHead className="text-right">结算成本</TableHead>
                     <TableHead className="text-right">施工成本</TableHead>
                     <TableHead className="text-right">盈亏分析</TableHead>

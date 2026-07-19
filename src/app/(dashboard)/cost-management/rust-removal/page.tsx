@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FilterableTableHead, type FilterOption } from "@/components/ui/filterable-table-head"
 import { formatCurrency } from "@/lib/utils"
 import { Plus, Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import type { RustRemovalCostInfo, ShipInfo, TeamInfo } from "@/types"
@@ -25,6 +26,10 @@ export default function RustRemovalCostPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [year, setYear] = useState(() => new Date().getFullYear())
 
+  // 列筛选状态
+  const [filterShipId, setFilterShipId] = useState("")
+  const [filterTeamId, setFilterTeamId] = useState("")
+
   const [form, setForm] = useState({
     repairNumber: "", shipId: "", area: "", projectName: "",
     teamId: "", manHours: "", hourlyRate: "", remarks: "",
@@ -38,6 +43,8 @@ export default function RustRemovalCostPage() {
         page: String(page), pageSize: String(DEFAULT_PAGE_SIZE), year: String(year),
       })
       if (search) params.set("search", search)
+      if (filterShipId) params.set("shipId", filterShipId)
+      if (filterTeamId) params.set("teamId", filterTeamId)
       const res = await fetch(`/api/costs/rust-removal?${params}`)
       const data = await res.json()
       if (data.success) {
@@ -46,13 +53,17 @@ export default function RustRemovalCostPage() {
         setTotal(data.data.pagination.total)
       }
     } finally { setLoading(false) }
-  }, [page, search, year])
+  }, [page, search, year, filterShipId, filterTeamId])
 
   useEffect(() => {
     fetchCosts()
     fetch("/api/ships?pageSize=100").then(r => r.json()).then(d => d.success && setShips(d.data.items)).catch(() => {})
     fetch("/api/teams?pageSize=100").then(r => r.json()).then(d => d.success && setTeams(d.data.items)).catch(() => {})
   }, [fetchCosts])
+
+  // 筛选选项
+  const shipOptions: FilterOption[] = useMemo(() => ships.map((s) => ({ value: String(s.id), label: s.name })), [ships])
+  const teamOptions: FilterOption[] = useMemo(() => teams.map((t) => ({ value: String(t.id), label: t.name })), [teams])
 
   const handleSubmit = async () => {
     if (!form.shipId || !form.area || !form.projectName || !form.manHours || !form.hourlyRate) return
@@ -159,8 +170,11 @@ export default function RustRemovalCostPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>修理编号</TableHead><TableHead>船名</TableHead><TableHead>尺寸(m)</TableHead>
-                    <TableHead>敲铲区域</TableHead><TableHead>工程项目</TableHead><TableHead>施工队伍</TableHead>
+                    <TableHead>修理编号</TableHead>
+                    <FilterableTableHead title="船名" options={shipOptions} value={filterShipId} onChange={(v) => { setFilterShipId(v); setPage(1) }} />
+                    <TableHead>尺寸(m)</TableHead>
+                    <TableHead>敲铲区域</TableHead><TableHead>工程项目</TableHead>
+                    <FilterableTableHead title="施工队伍" options={teamOptions} value={filterTeamId} onChange={(v) => { setFilterTeamId(v); setPage(1) }} />
                     <TableHead className="text-right">工时(h)</TableHead><TableHead className="text-right">单价</TableHead>
                     <TableHead className="text-right">工时花费</TableHead>
                   </TableRow>

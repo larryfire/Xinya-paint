@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FilterableTableHead, type FilterOption } from "@/components/ui/filterable-table-head"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { WATER_JET_PROJECTS, DEFAULT_PAGE_SIZE } from "@/lib/constants"
 import { Plus, Search, Loader2 } from "lucide-react"
@@ -27,6 +28,10 @@ export default function WaterJetCostPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [dialogOpen, setDialogOpen] = useState(false)
 
+  // 列筛选状态
+  const [filterProject, setFilterProject] = useState("")
+  const [filterTeamId, setFilterTeamId] = useState("")
+
   // 表单状态
   const [form, setForm] = useState({
     repairNumber: "", shipId: "", dockEntryTime: "",
@@ -40,6 +45,8 @@ export default function WaterJetCostPage() {
       const params = new URLSearchParams({ page: String(page), pageSize: String(DEFAULT_PAGE_SIZE) })
       if (year) params.set("year", String(year))
       if (shipId) params.set("shipId", shipId)
+      if (filterProject) params.set("project", filterProject)
+      if (filterTeamId) params.set("teamId", filterTeamId)
       const res = await fetch(`/api/costs/water-jet?${params}`)
       const data = await res.json()
       if (data.success) {
@@ -47,7 +54,7 @@ export default function WaterJetCostPage() {
         setTotalPages(data.data.pagination.totalPages)
       }
     } finally { setLoading(false) }
-  }, [page, year, shipId])
+  }, [page, year, shipId, filterProject, filterTeamId])
 
   const fetchOptions = useCallback(async () => {
     try {
@@ -64,6 +71,11 @@ export default function WaterJetCostPage() {
   }, [])
 
   useEffect(() => { fetchCosts(); fetchOptions() }, [fetchCosts, fetchOptions])
+
+  // 筛选选项
+  const shipOptions: FilterOption[] = useMemo(() => ships.map((s) => ({ value: String(s.id), label: s.name })), [ships])
+  const projectOptions: FilterOption[] = useMemo(() => WATER_JET_PROJECTS.map((p) => ({ value: p, label: p })), [])
+  const teamOptions: FilterOption[] = useMemo(() => teams.map((t) => ({ value: String(t.id), label: t.name })), [teams])
 
   const handleSubmit = async () => {
     if (!form.shipId || !form.dockEntryTime || !form.project || !form.teamId || !form.settlementCost || !form.constructionCost) return
@@ -211,10 +223,10 @@ export default function WaterJetCostPage() {
                   <TableRow>
                     <TableHead>修理编号</TableHead>
                     <TableHead>时间</TableHead>
-                    <TableHead>船名</TableHead>
+                    <FilterableTableHead title="船名" options={shipOptions} value={shipId} onChange={(v) => { setShipId(v); setPage(1) }} />
                     <TableHead>船舶尺寸</TableHead>
-                    <TableHead>水刀工程</TableHead>
-                    <TableHead>施工队伍</TableHead>
+                    <FilterableTableHead title="水刀工程" options={projectOptions} value={filterProject} onChange={(v) => { setFilterProject(v); setPage(1) }} />
+                    <FilterableTableHead title="施工队伍" options={teamOptions} value={filterTeamId} onChange={(v) => { setFilterTeamId(v); setPage(1) }} />
                     <TableHead className="text-right">结算成本</TableHead>
                     <TableHead className="text-right">施工成本</TableHead>
                     <TableHead className="text-right">单船盈亏</TableHead>

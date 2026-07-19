@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
       endDate = new Date(year, 11, 31, 23, 59, 59)
     }
 
+    const teamId = searchParams.get("teamId") ? parseInt(searchParams.get("teamId")!) : undefined
+
     // 权限过滤
     const where: Record<string, unknown> = {
       dockEntryTime: { gte: startDate, lte: endDate },
@@ -38,6 +40,8 @@ export async function GET(request: NextRequest) {
     } else if (auth.role === "leader" && auth.teamId) {
       where.teamId = auth.teamId
     }
+    // 显式队伍筛选（覆盖角色限制，admin可用）
+    if (teamId) where.teamId = teamId
 
     // 按队伍聚合查询
     const items = await prisma.externalPlateCost.groupBy({

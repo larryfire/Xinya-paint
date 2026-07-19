@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FilterableTableHead, type FilterOption } from "@/components/ui/filterable-table-head"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { Plus, Search, Loader2, Upload, X, ChevronLeft, ChevronRight } from "lucide-react"
 import type { CargoHoldCostInfo, ShipInfo, UserInfo, TeamInfo } from "@/types"
@@ -28,6 +29,10 @@ export default function CargoHoldCostPage() {
   const [uploading, setUploading] = useState(false)
   const [year, setYear] = useState(() => new Date().getFullYear())
 
+  // 列筛选状态
+  const [filterShipId, setFilterShipId] = useState("")
+  const [filterTeamId, setFilterTeamId] = useState("")
+
   const [form, setForm] = useState({
     repairNumber: "", shipId: "", supervisorId: "", cargoRatio: "", originalRatio: "",
     teamId: "", settlementCost: "", constructionCost: "", remarks: "", originalPhoto: "",
@@ -41,6 +46,8 @@ export default function CargoHoldCostPage() {
         page: String(page), pageSize: String(DEFAULT_PAGE_SIZE), year: String(year),
       })
       if (search) params.set("search", search)
+      if (filterShipId) params.set("shipId", filterShipId)
+      if (filterTeamId) params.set("teamId", filterTeamId)
       const res = await fetch(`/api/costs/cargo-hold?${params}`)
       const data = await res.json()
       if (data.success) {
@@ -49,7 +56,7 @@ export default function CargoHoldCostPage() {
         setTotal(data.data.pagination.total)
       }
     } finally { setLoading(false) }
-  }, [page, search, year])
+  }, [page, search, year, filterShipId, filterTeamId])
 
   useEffect(() => {
     fetchCosts()
@@ -57,6 +64,10 @@ export default function CargoHoldCostPage() {
     fetch("/api/users?role=supervisor&pageSize=100").then(r => r.json()).then(d => d.success && setSupervisors(d.data.items)).catch(() => {})
     fetch("/api/teams?pageSize=100").then(r => r.json()).then(d => d.success && setTeams(d.data.items)).catch(() => {})
   }, [fetchCosts])
+
+  // 筛选选项
+  const shipOptions: FilterOption[] = useMemo(() => ships.map((s) => ({ value: String(s.id), label: s.name })), [ships])
+  const teamOptions: FilterOption[] = useMemo(() => teams.map((t) => ({ value: String(t.id), label: t.name })), [teams])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -203,9 +214,11 @@ export default function CargoHoldCostPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>修理编号</TableHead><TableHead>船名</TableHead><TableHead>尺寸(m)</TableHead>
+                    <TableHead>修理编号</TableHead>
+                    <FilterableTableHead title="船名" options={shipOptions} value={filterShipId} onChange={(v) => { setFilterShipId(v); setPage(1) }} />
+                    <TableHead>尺寸(m)</TableHead>
                     <TableHead className="text-right">货舱比例</TableHead><TableHead className="text-right">原始比例</TableHead>
-                    <TableHead>施工队伍</TableHead>
+                    <FilterableTableHead title="施工队伍" options={teamOptions} value={filterTeamId} onChange={(v) => { setFilterTeamId(v); setPage(1) }} />
                     <TableHead className="text-right">结算成本</TableHead><TableHead className="text-right">施工成本</TableHead>
                     <TableHead className="text-right">单船盈亏</TableHead><TableHead>盈亏分析</TableHead>
                   </TableRow>
