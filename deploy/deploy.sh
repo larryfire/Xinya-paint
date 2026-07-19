@@ -224,15 +224,15 @@ check_env() {
         if [ -f "./deploy/.env.production" ]; then
             log_info "首次部署，从模板创建 .env.production..."
 
-            # 自动生成强密码
-            ROOT_PW=$(openssl rand -base64 24 2>/dev/null || head -c 32 /dev/urandom | base64)
-            USER_PW=$(openssl rand -base64 24 2>/dev/null || head -c 32 /dev/urandom | base64)
-            JWT_SECRET=$(openssl rand -base64 64 2>/dev/null || head -c 64 /dev/urandom | base64)
+            # 自动生成强密码（去除尾随换行符，避免 sed 命令中断）
+            ROOT_PW=$(openssl rand -base64 24 2>/dev/null | tr -d '\n' || head -c 32 /dev/urandom | base64 | tr -d '\n')
+            USER_PW=$(openssl rand -base64 24 2>/dev/null | tr -d '\n' || head -c 32 /dev/urandom | base64 | tr -d '\n')
+            JWT_SECRET=$(openssl rand -base64 64 2>/dev/null | tr -d '\n' || head -c 64 /dev/urandom | base64 | tr -d '\n')
 
             cp "./deploy/.env.production" ".env.production"
-            sed -i "s/请替换为强密码_至少16位/$ROOT_PW/" ".env.production"
-            sed -i "s/请替换为强密码_至少16位/$USER_PW/" ".env.production"
-            sed -i "s/请替换为随机生成的64位Base64字符串/$JWT_SECRET/" ".env.production"
+            sed -i "s|__ROOT_PW__|$ROOT_PW|" ".env.production"
+            sed -i "s|__USER_PW__|$USER_PW|" ".env.production"
+            sed -i "s|__JWT_SECRET__|$JWT_SECRET|" ".env.production"
 
             log_info "已自动生成密码并保存到 .env.production"
             log_warn "请妥善保存 .env.production 文件中的密码！"
@@ -277,7 +277,7 @@ deploy() {
     # 等待服务就绪
     log_info "等待服务就绪..."
     for i in $(seq 1 30); do
-        if curl -sf http://localhost:3000/api/auth/me > /dev/null 2>&1; then
+        if curl -s -o /dev/null http://localhost:3000/api/auth/me; then
             log_info "应用启动成功! (耗时 ${i}s)"
             break
         fi

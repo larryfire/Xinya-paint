@@ -1,6 +1,22 @@
-version: "3.8"
-
 services:
+  db:
+    image: mariadb:11
+    container_name: xinya-mysql
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD 必须设置}
+      MARIADB_DATABASE: ${MYSQL_DATABASE:-xinya_paint}
+      MARIADB_USER: ${MYSQL_USER:-xinya}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD 必须设置}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   app:
     build: .
     container_name: xinya-app
@@ -8,17 +24,21 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: ${DATABASE_URL:-file:/data/prod.db}
+      DATABASE_URL: mysql://${MYSQL_USER:-xinya}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE:-xinya_paint}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET 必须设置}
       NODE_ENV: production
     volumes:
       - app_data:/data
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/auth/me"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
 volumes:
+  mysql_data:
   app_data:

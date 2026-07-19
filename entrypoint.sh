@@ -10,7 +10,7 @@ echo ">>> Syncing database schema with Prisma..."
 npx prisma db push --accept-data-loss
 
 echo ">>> Running seed if needed..."
-npx prisma db seed 2>/dev/null || echo "(seed skipped or no seed file)"
+timeout 30 npx prisma db seed 2>/dev/null || echo "(seed skipped, failed, or timed out)"
 
 echo ">>> Starting Next.js..."
 exec node_modules/.bin/next start

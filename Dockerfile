@@ -12,6 +12,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# 生产环境使用 MySQL/MariaDB，构建时替换 provider
+RUN sed -i 's/provider = "sqlite"/provider = "mysql"/' prisma/schema.prisma
 RUN npx prisma generate
 RUN npm run build
 
@@ -28,6 +30,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/src/generated/prisma ./src/generated/prisma
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package.json ./
 

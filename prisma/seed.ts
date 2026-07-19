@@ -2,10 +2,16 @@
 import "dotenv/config"
 import { PrismaClient } from "../src/generated/prisma/client"
 import { PrismaLibSql } from "@prisma/adapter-libsql"
+import { PrismaMariaDb } from "@prisma/adapter-mariadb"
 import bcrypt from "bcryptjs"
 
 const dbUrl = process.env.DATABASE_URL || "file:./dev.db"
-const adapter = new PrismaLibSql({ url: dbUrl })
+
+// 根据数据库类型选择适配器
+const adapter = (dbUrl.startsWith("mysql://") || dbUrl.startsWith("mariadb://"))
+  ? new PrismaMariaDb(dbUrl)
+  : new PrismaLibSql({ url: dbUrl })
+
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
