@@ -209,6 +209,16 @@ export interface ActiveAttendanceInfo {
   currentHours: number
 }
 
+export interface SceneSettingsInfo {
+  id: number
+  coastlineZ: number
+  waterOpacity: number
+  ambientIntensity: number
+  bgColor: string
+  fogNear: number
+  fogFar: number
+}
+
 export interface Pagination {
   page: number
   pageSize: number

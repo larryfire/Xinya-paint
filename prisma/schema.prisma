@@ -258,3 +258,17 @@ model Attendance {
   @@index([endTime])
   @@map("attendances")
 }
+
+// ==================== 3D场景设置表（单例，id=1） ====================
+model SceneSettings {
+  id                Int     @id @default(1)
+  coastlineZ        Float   @default(0)
+  waterOpacity      Float   @default(0.6)
+  ambientIntensity  Float   @default(0.6)
+  bgColor           String  @default("#D4EAF0")
+  fogNear           Float   @default(40)
+  fogFar            Float   @default(120)
+  updatedAt         DateTime @updatedAt
+
+  @@map("scene_settings")
+}
