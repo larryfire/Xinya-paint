@@ -33,6 +33,7 @@ export interface ShipInfo {
   width: number
   height: number
   status: "docked" | "at_berth" | "at_sea" | "maintenance"
+  factoryId?: number
   dockId?: number | null
   dockName?: string
   berthId?: number | null
@@ -47,6 +48,7 @@ export interface DockInfo {
   id: number
   name: string
   type: "dock" | "berth" | "wharf" | "warehouse" | "workshop"
+  factoryId?: number
   positionX: number
   positionZ: number
   width: number
@@ -211,12 +213,47 @@ export interface ActiveAttendanceInfo {
 
 export interface SceneSettingsInfo {
   id: number
+  factoryId: number
   coastlineZ: number
   waterOpacity: number
   ambientIntensity: number
   bgColor: string
   fogNear: number
   fogFar: number
+  factoryLayout?: string | null
+  gantryCraneCount: number
+  mapCenterX: number
+  mapCenterZ: number
+}
+
+/** 门座式起重机信息 */
+export interface GantryCraneInfo {
+  id: number
+  name: string
+  factoryId: number
+  positionX: number
+  positionZ: number
+  rotation: number
+  dockId?: number | null
+  status: "active" | "maintenance" | "idle"
+}
+
+/** 天气潮汐数据 */
+export interface WeatherTideData {
+  temperature: number
+  weather: string
+  weatherIcon: string
+  windDirection: string
+  windSpeed: number
+  humidity: number
+  pressure: number
+  visibility: number
+  tideHeight: number
+  tideTrend: "rising" | "falling"
+  nextHighTide: { time: string; height: number }
+  nextLowTide: { time: string; height: number }
+  bestDockTimes: { start: string; end: string; score: number; label: string }[]
+  hourlyForecast: { time: string; tideHeight: number }[]
 }
 
 export interface Pagination {

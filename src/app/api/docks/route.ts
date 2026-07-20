@@ -9,7 +9,13 @@ export async function GET(request: NextRequest) {
     const auth = await authenticate(request)
     authorize(auth, "dock:read")
 
+    const { searchParams } = new URL(request.url)
+    const factoryId = searchParams.get("factoryId")
+    const where: Record<string, unknown> = {}
+    if (factoryId) where.factoryId = Number(factoryId)
+
     const docks = await prisma.dock.findMany({
+      where,
       orderBy: { createdAt: "asc" },
     })
     return success(docks)

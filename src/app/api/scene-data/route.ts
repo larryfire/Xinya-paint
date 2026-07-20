@@ -3,49 +3,79 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error } from "@/lib/api-response"
 
+/**
+ * GET /api/scene-data?factoryId=1
+ * 获取3D场景所需全部数据（船舶、设施、门机、出勤、队伍、成本）
+ */
 export async function GET(request: NextRequest) {
   try {
     const auth = await authenticate(request)
     authorize(auth, "scene:view")
 
+    const { searchParams } = new URL(request.url)
+    const factoryId = Number(searchParams.get("factoryId") || "1")
     const now = Date.now()
 
-    const [docks, ships, activeAttendances, shipTeams, costs] = await Promise.all([
-      prisma.dock.findMany({ orderBy: { createdAt: "asc" } }),
-      prisma.ship.findMany({
-        orderBy: { createdAt: "asc" },
-        select: {
-          id: true, name: true, shipType: true, status: true,
-          dockId: true, berthId: true, positionX: true, positionZ: true,
-          rotation: true, length: true, width: true, height: true,
-          dock: { select: { name: true } },
-          berth: { select: { name: true } },
-        },
-      }),
-      // 当前活跃出勤
-      prisma.attendance.findMany({
-        where: { endTime: null },
-        include: {
-          team: { select: { name: true } },
-          ship: { select: { name: true } },
-          dock: { select: { name: true } },
-        },
-      }),
-      // 船舶-队伍分配
-      prisma.shipTeam.findMany({
-        include: {
-          team: { select: { name: true, _count: { select: { members: true } } } },
-        },
-      }),
-      // 各船成本汇总
-      prisma.externalPlateCost.groupBy({
-        by: ["shipId"],
-        _sum: { settlementCost: true, constructionCost: true },
-      }),
-    ])
+    const [docks, ships, gantryCranes, activeAttendances, shipTeams, costs] =
+      await Promise.all([
+        prisma.dock.findMany({
+          where: { factoryId },
+          orderBy: { createdAt: "asc" },
+        }),
+        prisma.ship.findMany({
+          where: { factoryId },
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            name: true,
+            shipType: true,
+            status: true,
+            factoryId: true,
+            dockId: true,
+            berthId: true,
+            positionX: true,
+            positionZ: true,
+            rotation: true,
+            length: true,
+            width: true,
+            height: true,
+            dock: { select: { name: true } },
+            berth: { select: { name: true } },
+          },
+        }),
+        prisma.gantryCrane.findMany({
+          where: { factoryId },
+          orderBy: { createdAt: "asc" },
+        }),
+        prisma.attendance.findMany({
+          where: { endTime: null },
+          include: {
+            team: { select: { name: true } },
+            ship: { select: { name: true } },
+            dock: { select: { name: true } },
+          },
+        }),
+        prisma.shipTeam.findMany({
+          include: {
+            team: {
+              select: {
+                name: true,
+                _count: { select: { members: true } },
+              },
+            },
+          },
+        }),
+        prisma.externalPlateCost.groupBy({
+          by: ["shipId"],
+          _sum: { settlementCost: true, constructionCost: true },
+        }),
+      ])
 
     // 构建 shipId -> teams 映射
-    const shipTeamMap = new Map<number, { teamId: number; teamName: string; memberCount: number }[]>()
+    const shipTeamMap = new Map<
+      number,
+      { teamId: number; teamName: string; memberCount: number }[]
+    >()
     for (const st of shipTeams) {
       if (!shipTeamMap.has(st.shipId)) shipTeamMap.set(st.shipId, [])
       shipTeamMap.get(st.shipId)!.push({
@@ -55,9 +85,29 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // 构建 shipId -> active attendance 映射
-    const shipAttendanceMap = new Map<number, { id: number; teamId: number; teamName: string; workerCount: number; startTime: string; currentHours: number }[]>()
-    const dockAttendanceMap = new Map<number, { id: number; teamId: number; teamName: string; workerCount: number; startTime: string; currentHours: number }[]>()
+    // 构建出勤映射
+    const shipAttendanceMap = new Map<
+      number,
+      {
+        id: number
+        teamId: number
+        teamName: string
+        workerCount: number
+        startTime: string
+        currentHours: number
+      }[]
+    >()
+    const dockAttendanceMap = new Map<
+      number,
+      {
+        id: number
+        teamId: number
+        teamName: string
+        workerCount: number
+        startTime: string
+        currentHours: number
+      }[]
+    >()
     for (const a of activeAttendances) {
       const item = {
         id: a.id,
@@ -65,20 +115,28 @@ export async function GET(request: NextRequest) {
         teamName: a.team.name,
         workerCount: a.workerCount,
         startTime: a.startTime.toISOString(),
-        currentHours: Math.round(((now - new Date(a.startTime).getTime()) / (1000 * 60 * 60)) * 100) / 100,
+        currentHours:
+          Math.round(
+            ((now - new Date(a.startTime).getTime()) / (1000 * 60 * 60)) * 100
+          ) / 100,
       }
       if (a.shipId) {
-        if (!shipAttendanceMap.has(a.shipId)) shipAttendanceMap.set(a.shipId, [])
+        if (!shipAttendanceMap.has(a.shipId))
+          shipAttendanceMap.set(a.shipId, [])
         shipAttendanceMap.get(a.shipId)!.push(item)
       }
       if (a.dockId) {
-        if (!dockAttendanceMap.has(a.dockId)) dockAttendanceMap.set(a.dockId, [])
+        if (!dockAttendanceMap.has(a.dockId))
+          dockAttendanceMap.set(a.dockId, [])
         dockAttendanceMap.get(a.dockId)!.push(item)
       }
     }
 
-    // 构建 shipId -> cost 映射
-    const shipCostMap = new Map<number, { settlement: number; construction: number }>()
+    // 构建成本映射
+    const shipCostMap = new Map<
+      number,
+      { settlement: number; construction: number }
+    >()
     for (const c of costs) {
       shipCostMap.set(c.shipId, {
         settlement: Number(c._sum.settlementCost ?? 0),
@@ -91,6 +149,7 @@ export async function GET(request: NextRequest) {
         id: d.id,
         name: d.name,
         type: d.type,
+        factoryId: d.factoryId,
         positionX: Number(d.positionX),
         positionZ: Number(d.positionZ),
         width: Number(d.width),
@@ -115,10 +174,27 @@ export async function GET(request: NextRequest) {
           totalConstructionCost: costs?.construction ?? 0,
         }
       }),
+      gantryCranes: gantryCranes.map((gc) => ({
+        id: gc.id,
+        name: gc.name,
+        factoryId: gc.factoryId,
+        dockId: gc.dockId,
+        positionX: Number(gc.positionX),
+        positionZ: Number(gc.positionZ),
+        rotation: Number(gc.rotation),
+        status: gc.status,
+      })),
     })
   } catch (err) {
-    if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {
-      return error(err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN", err.message, err.name === "UnauthorizedError" ? 401 : 403)
+    if (
+      err instanceof Error &&
+      (err.name === "UnauthorizedError" || err.name === "ForbiddenError")
+    ) {
+      return error(
+        err.name === "UnauthorizedError" ? "UNAUTHORIZED" : "FORBIDDEN",
+        err.message,
+        err.name === "UnauthorizedError" ? 401 : 403
+      )
     }
     console.error("Scene-data error:", err)
     return error("INTERNAL_ERROR", "获取场景数据失败", 500)

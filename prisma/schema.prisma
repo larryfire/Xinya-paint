@@ -67,6 +67,7 @@ model Ship {
   width     Float
   height    Float
   status    String   @default("at_sea")
+  factoryId Int      @default(1) @map("factory_id")
   dockId    Int?     @map("dock_id")
   berthId   Int?     @map("berth_id")
   positionX Float?   @map("position_x")
@@ -91,6 +92,7 @@ model Dock {
   id        Int      @id @default(autoincrement())
   name      String
   type      String
+  factoryId Int      @default(1) @map("factory_id")
   positionX Float    @map("position_x")
   positionZ Float    @map("position_z")
   width     Float
@@ -101,8 +103,26 @@ model Dock {
   dockedShips  Ship[] @relation("ShipDock")
   berthedShips Ship[] @relation("ShipBerth")
   attendances  Attendance[]
+  gantryCranes GantryCrane[]
 
   @@map("docks")
+}
+
+// ==================== 门座式起重机表 ====================
+model GantryCrane {
+  id        Int      @id @default(autoincrement())
+  name      String
+  factoryId Int      @default(1) @map("factory_id")
+  dockId    Int?     @map("dock_id")
+  positionX Float    @map("position_x")
+  positionZ Float    @map("position_z")
+  rotation  Float    @default(0)
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  dock Dock? @relation(fields: [dockId], references: [id], onDelete: SetNull)
+
+  @@map("gantry_cranes")
 }
 
 // ==================== 外板成本表 ====================
@@ -259,15 +279,20 @@ model Attendance {
   @@map("attendances")
 }
 
-// ==================== 3D场景设置表（单例，id=1） ====================
+// ==================== 3D场景设置表（双厂区，id=1鑫亚，id=2亚泰） ====================
 model SceneSettings {
-  id                Int     @id @default(1)
+  id                Int     @id @default(autoincrement())
+  factoryId         Int     @unique @default(1)
   coastlineZ        Float   @default(0)
   waterOpacity      Float   @default(0.6)
   ambientIntensity  Float   @default(0.6)
-  bgColor           String  @default("#D4EAF0")
-  fogNear           Float   @default(40)
-  fogFar            Float   @default(120)
+  bgColor           String  @default("#0A1628")
+  fogNear           Float   @default(60)
+  fogFar            Float   @default(200)
+  factoryLayout     String?
+  gantryCraneCount  Int     @default(4)
+  mapCenterX        Float   @default(0)
+  mapCenterZ        Float   @default(0)
   updatedAt         DateTime @updatedAt
 
   @@map("scene_settings")

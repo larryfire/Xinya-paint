@@ -121,6 +121,7 @@ export const updateSafetyPunishmentSchema = createSafetyPunishmentSchema.partial
 export const createDockSchema = z.object({
   name: z.string().min(1, "名称不能为空").max(100),
   type: z.enum(["dock", "berth", "wharf", "warehouse", "workshop"]),
+  factoryId: z.number().positive().optional(),
   positionX: z.number(),
   positionZ: z.number(),
   width: z.number().positive(),
