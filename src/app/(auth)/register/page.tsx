@@ -81,7 +81,7 @@ export default function RegisterPage() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <Card className="w-[400px] shadow-lg">
+        <Card className="w-full max-w-[400px] shadow-lg">
           <CardContent className="pt-8 pb-8 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
               <CheckCircle className="h-8 w-8 text-green-600" />
@@ -104,7 +104,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <Card className="w-[400px] shadow-lg">
+      <Card className="w-full max-w-[400px] shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800">
             <Ship className="h-6 w-6 text-white" />

@@ -4,12 +4,19 @@ import { useState, useRef, useEffect } from "react"
 import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { LogOut, User, Key, RefreshCw, ChevronRight } from "lucide-react"
+import { LogOut, User, Key, RefreshCw, ChevronRight, Menu } from "lucide-react"
 import { ProfileDialog } from "@/components/profile/profile-dialog"
 import { ChangePasswordDialog } from "@/components/profile/change-password-dialog"
 import { cn } from "@/lib/utils"
 
-export function Header() {
+interface HeaderProps {
+  /** 是否为移动端 */
+  isMobile?: boolean
+  /** 移动端菜单按钮点击回调 */
+  onMenuClick?: () => void
+}
+
+export function Header({ isMobile = false, onMenuClick }: HeaderProps) {
   const { user, logout } = useAuthStore()
   const router = useRouter()
   const [profileOpen, setProfileOpen] = useState(false)
@@ -61,10 +68,26 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-6">
-        <div>
+      <header
+        className={cn(
+          "sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white",
+          isMobile ? "px-3" : "px-6"
+        )}
+      >
+        <div className="flex items-center gap-3">
+          {/* 移动端汉堡菜单按钮 */}
+          {isMobile && (
+            <button
+              type="button"
+              onClick={onMenuClick}
+              className="inline-flex items-center justify-center rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
+              aria-label="打开菜单"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
           <h2 className="text-lg font-semibold text-slate-800">
-            船舶涂装管理系统
+            {isMobile ? "鑫亚涂装" : "船舶涂装管理系统"}
           </h2>
         </div>
 

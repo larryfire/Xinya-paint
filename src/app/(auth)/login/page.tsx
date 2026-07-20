@@ -51,7 +51,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-[400px] shadow-lg">
+    <Card className="w-full max-w-[400px] shadow-lg">
       <CardHeader className="text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800">
           <Ship className="h-6 w-6 text-white" />

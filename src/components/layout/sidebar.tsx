@@ -41,6 +41,12 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+  /** 是否为移动端 */
+  isMobile?: boolean
+  /** 移动端菜单是否打开 */
+  mobileOpen?: boolean
+  /** 移动端关闭回调 */
+  onMobileClose?: () => void
 }
 
 function SidebarLink({ item, collapsed, pathname }: { item: MenuItem; collapsed: boolean; pathname: string }) {
@@ -110,34 +116,48 @@ function SidebarGroup({ item, collapsed, pathname }: { item: MenuItem; collapsed
   )
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({
+  collapsed,
+  onToggle,
+  isMobile = false,
+  mobileOpen = false,
+  onMobileClose,
+}: SidebarProps) {
   const pathname = usePathname()
   const { user } = useAuthStore()
 
   const menuItems = user ? getMenuItems(user.role) : []
 
+  /** 点击导航链接后关闭移动菜单 */
+  const handleMobileNav = () => {
+    if (isMobile && onMobileClose) onMobileClose()
+  }
+
   return (
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen bg-slate-900 text-white transition-all duration-300 flex flex-col",
-        collapsed ? "w-16" : "w-60"
+        // 桌面端宽度
+        !isMobile && (collapsed ? "w-16" : "w-60"),
+        // 移动端宽度 + 滑入动画
+        isMobile && "w-60",
+        isMobile && (mobileOpen ? "translate-x-0" : "-translate-x-full")
       )}
     >
       {/* Logo */}
       <div className="flex h-14 items-center justify-between px-4 border-b border-slate-700">
-        {!collapsed && (
-          <span className="text-lg font-bold whitespace-nowrap">鑫亚涂装</span>
-        )}
+        <span className="text-lg font-bold whitespace-nowrap">鑫亚涂装</span>
+        {/* 桌面端：折叠按钮；移动端：关闭按钮 */}
         <Button
           variant="ghost"
           size="icon"
-          onClick={onToggle}
+          onClick={isMobile ? onMobileClose : onToggle}
           className="text-slate-400 hover:text-white hover:bg-slate-800"
         >
           <ChevronLeft
             className={cn(
               "h-5 w-5 transition-transform",
-              collapsed && "rotate-180"
+              !isMobile && collapsed && "rotate-180"
             )}
           />
         </Button>
@@ -145,28 +165,42 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-2 py-4">
-        <nav className="space-y-1">
+        <nav className="space-y-1" onClick={handleMobileNav}>
           {menuItems.map((item) => {
             if (item.children && item.children.length > 0) {
-              return <SidebarGroup key={item.label} item={item} collapsed={collapsed} pathname={pathname} />
+              return (
+                <SidebarGroup
+                  key={item.label}
+                  item={item}
+                  collapsed={isMobile ? false : collapsed}
+                  pathname={pathname}
+                />
+              )
             }
-            return <SidebarLink key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
+            return (
+              <SidebarLink
+                key={item.href}
+                item={item}
+                collapsed={isMobile ? false : collapsed}
+                pathname={pathname}
+              />
+            )
           })}
         </nav>
       </ScrollArea>
 
       {/* Footer */}
-      {!collapsed && user && (
+      {user && (
         <div className="border-t border-slate-700 p-4">
           <p className="text-xs text-slate-400 truncate">{user.realName}</p>
           <p className="text-xs text-slate-500">
             {user.role === "admin"
               ? "管理员"
               : user.role === "supervisor"
-              ? "涂装主管"
-              : user.role === "leader"
-              ? "工地主任"
-              : "员工"}
+                ? "涂装主管"
+                : user.role === "leader"
+                  ? "工地主任"
+                  : "员工"}
           </p>
         </div>
       )}

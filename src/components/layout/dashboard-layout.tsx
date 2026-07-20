@@ -5,17 +5,53 @@ import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useAuthStore } from "@/stores/auth-store"
+import { useUiStore } from "@/stores/ui-store"
 import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
+
+/** 移动端断点：屏幕宽度 < 1024px 时启用移动端布局 */
+const MOBILE_BREAKPOINT = 1024
 
 /**
  * Dashboard 主布局 — 包含鉴权加载状态管理
  * 页面刷新时先显示 loading，等 /api/auth/me 返回后再渲染内容
+ * 支持桌面端（侧边栏 + 主内容区）和移动端（overlay 侧边栏）双模式
  */
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false)
   const { user, isLoading, token, setUser, setLoading } = useAuthStore()
+  const {
+    sidebarCollapsed,
+    mobileMenuOpen,
+    toggleSidebar,
+    setMobileMenuOpen,
+  } = useUiStore()
+  const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
+
+  // 监听屏幕宽度，判断是否为移动端
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
+  // 移动端菜单打开时禁止 body 滚动
+  useEffect(() => {
+    if (isMobile && mobileMenuOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isMobile, mobileMenuOpen])
+
+  // 切换到桌面端时自动关闭移动菜单
+  useEffect(() => {
+    if (!isMobile) setMobileMenuOpen(false)
+  }, [isMobile, setMobileMenuOpen])
 
   // 页面加载时从服务端获取当前用户信息
   useEffect(() => {
@@ -79,15 +115,38 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={toggleSidebar}
+        isMobile={isMobile}
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      />
+
+      {/* 移动端遮罩层 */}
+      {isMobile && mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <div
         className={cn(
           "transition-all duration-300",
-          collapsed ? "ml-16" : "ml-60"
+          isMobile
+            ? "ml-0"
+            : sidebarCollapsed
+              ? "ml-16"
+              : "ml-60"
         )}
       >
-        <Header />
-        <main className="p-6">{children}</main>
+        <Header
+          isMobile={isMobile}
+          onMenuClick={() => setMobileMenuOpen(true)}
+        />
+        <main className={cn(isMobile ? "p-4" : "p-6")}>{children}</main>
       </div>
     </div>
   )
