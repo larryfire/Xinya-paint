@@ -9,6 +9,7 @@ import { BuildingModel } from "@/components/3d/building-model"
 import { SceneLights } from "@/components/3d/scene-lights"
 import { WaterEffect } from "@/components/3d/water-effect"
 import { TerrainGround, getTerrainConfig } from "@/components/3d/terrain-ground"
+import { GroundTexture } from "@/components/3d/ground-texture"
 import { ResizeHandles } from "@/components/3d/editor-tools"
 import { SHIP_STATUS_MAP, DOCK_STATUS_MAP } from "@/lib/constants"
 import type { DockInfo, ShipSceneInfo } from "@/types"
@@ -352,7 +353,7 @@ function GridHelper3D({ factoryId }: { factoryId: number }) {
         position={[0, -0.49, config.groundZ]}
       />
       <gridHelper
-        args={[config.groundSize[0], 40, "#0A3D5C33", "#0A3D5C33"]}
+        args={[config.groundSize[0], 40, "#0A3D5C", "#0A3D5C"]}
         position={[0, -0.29, config.waterZ]}
       />
     </>
@@ -445,6 +446,7 @@ export function SceneModel({
   const sceneSettings = useSceneStore((s) => s.sceneSettings)
   const ctxMenu = useSceneStore((s) => s.ctxMenu)
   const setCtxMenu = useSceneStore((s) => s.setCtxMenu)
+  const showSatelliteMap = useSceneStore((s) => s.showSatelliteMap)
 
   const s = sceneSettings || DEFAULT_SETTINGS
   const [dragTarget, setDragTarget] = useState<DragTarget>(null)
@@ -558,6 +560,16 @@ export function SceneModel({
           factoryId={currentFactory}
           coastlineZ={s.coastlineZ}
         />
+
+        {/* 卫星航拍纹理底图（根据PDF图纸生成） */}
+        {showSatelliteMap && (
+          <GroundTexture
+            factoryId={currentFactory as 1 | 2}
+            groundSize={getTerrainConfig(currentFactory as 1 | 2).groundSize}
+            groundZ={getTerrainConfig(currentFactory as 1 | 2).groundZ}
+            opacity={0.75}
+          />
+        )}
 
         {/* 水面 */}
         <WaterEffect

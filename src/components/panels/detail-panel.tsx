@@ -293,7 +293,7 @@ export function DetailPanel({
       )}
 
       {/* ===== 出勤表单对话框 ===== */}
-      {useSceneStore((s) => s.attendanceOpen) && (
+      {useSceneStore.getState().attendanceOpen && (
         <div className="absolute inset-0 bg-black/50 z-50 flex items-end">
           <div className="bg-slate-900 border-t border-slate-700/50 rounded-t-xl p-4 w-full space-y-3">
             <div className="flex items-center justify-between">

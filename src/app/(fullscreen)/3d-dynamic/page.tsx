@@ -32,6 +32,8 @@ export default function WebGIS3DPage() {
   const editTool = useSceneStore((s) => s.editTool)
   const setCtxMenu = useSceneStore((s) => s.setCtxMenu)
   const ctxMenu = useSceneStore((s) => s.ctxMenu)
+  const showSatelliteMap = useSceneStore((s) => s.showSatelliteMap)
+  const toggleSatelliteMap = useSceneStore((s) => s.toggleSatelliteMap)
 
   // ===== 数据获取 =====
   const fetchSceneData = useCallback(async () => {
@@ -203,6 +205,17 @@ export default function WebGIS3DPage() {
 
       {/* ===== 右上角：操作按钮 ===== */}
       <div className="absolute top-3 right-3 flex gap-2 z-40">
+        {/* 卫星地图切换 */}
+        <button
+          className={`px-3 py-1.5 text-xs font-medium border rounded-lg backdrop-blur-sm transition-colors ${
+            showSatelliteMap
+              ? "bg-cyan-600/80 text-white border-cyan-400/50 hover:bg-cyan-600/90"
+              : "bg-slate-800/90 text-slate-200 border-slate-600/50 hover:bg-slate-700/90"
+          }`}
+          onClick={toggleSatelliteMap}
+        >
+          🛰️ 卫星地图
+        </button>
         {isAdmin && !editMode && (
           <button
             className="px-3 py-1.5 text-xs font-medium bg-slate-800/90 text-slate-200 border border-slate-600/50 rounded-lg hover:bg-slate-700/90 backdrop-blur-sm transition-colors"

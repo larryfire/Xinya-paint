@@ -64,6 +64,10 @@ interface SceneState {
     m: { x: number; y: number; wx: number; wz: number } | null
   ) => void
 
+  // 卫星地图纹理
+  showSatelliteMap: boolean
+  toggleSatelliteMap: () => void
+
   // 面板
   panelOpen: boolean
   setPanelOpen: (v: boolean) => void
@@ -137,6 +141,11 @@ export const useSceneStore = create<SceneState>((set) => ({
   // 上下文菜单
   ctxMenu: null,
   setCtxMenu: (m) => set({ ctxMenu: m }),
+
+  // 卫星地图纹理
+  showSatelliteMap: false,
+  toggleSatelliteMap: () =>
+    set((s) => ({ showSatelliteMap: !s.showSatelliteMap })),
 
   // 面板控制
   panelOpen: false,
