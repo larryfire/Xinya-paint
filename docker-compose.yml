@@ -21,8 +21,8 @@ services:
     build: .
     container_name: xinya-app
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       DATABASE_URL: mysql://${MYSQL_USER:-xinya}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE:-xinya_paint}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET 必须设置}
@@ -38,6 +38,18 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # Nginx 反向代理 — 对外暴露80端口，静态资源缓存
+  nginx:
+    image: nginx:alpine
+    container_name: xinya-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
 
 volumes:
   mysql_data:

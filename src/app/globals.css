@@ -128,3 +128,19 @@
     @apply font-sans;
   }
 }
+
+/* 3D Canvas 触摸优化 — 移动端手势支持 */
+canvas {
+  touch-action: none;
+}
+
+/* 移动端安全区域适配 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}

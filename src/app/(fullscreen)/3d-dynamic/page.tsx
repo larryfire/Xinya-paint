@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback, useRef } from "react"
+import { useEffect, useCallback, useRef, useState } from "react"
 import { useAuthStore } from "@/stores/auth-store"
 import { useSceneStore, type EditTool } from "@/stores/scene-store"
 import { SceneModel } from "@/components/3d/scene-model"
@@ -10,11 +10,15 @@ import { StatsOverlay } from "@/components/panels/stats-overlay"
 import { WeatherTidePanel } from "@/components/panels/weather-tide-panel"
 import { DetailPanel } from "@/components/panels/detail-panel"
 import { LegendBar } from "@/components/panels/legend-bar"
-import { Loader2 } from "lucide-react"
+import { Loader2, BarChart3, Cloud, MapPin, ChevronUp } from "lucide-react"
+
+/** 移动端断点：< 768px 启用紧凑布局 */
+const MOBILE_BREAKPOINT = 768
 
 /**
  * WebGIS 3D船舶动态大屏主页面
- * 全屏暗色主题，集成Two.js 3D场景 + 数据可视化面板
+ * 全屏暗色主题，集成Three.js 3D场景 + 数据可视化面板
+ * 支持桌面端（多面板同屏）和移动端（面板折叠+底部抽屉）双模式
  */
 export default function WebGIS3DPage() {
   const { user } = useAuthStore()
@@ -34,6 +38,18 @@ export default function WebGIS3DPage() {
   const ctxMenu = useSceneStore((s) => s.ctxMenu)
   const showSatelliteMap = useSceneStore((s) => s.showSatelliteMap)
   const toggleSatelliteMap = useSceneStore((s) => s.toggleSatelliteMap)
+
+  // ===== 移动端状态 =====
+  const [isMobile, setIsMobile] = useState(false)
+  const [showMobileStats, setShowMobileStats] = useState(false)
+  const [showMobileWeather, setShowMobileWeather] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
 
   // ===== 数据获取 =====
   const fetchSceneData = useCallback(async () => {
@@ -172,7 +188,7 @@ export default function WebGIS3DPage() {
   )
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full" style={{ touchAction: "manipulation" }}>
       {/* ===== 3D场景主区域 ===== */}
       {loading ? (
         <div className="flex items-center justify-center h-full">
@@ -194,37 +210,90 @@ export default function WebGIS3DPage() {
       )}
 
       {/* ===== 顶部：厂区切换 ===== */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50">
+      <div
+        className="absolute left-1/2 -translate-x-1/2 z-50"
+        style={{ top: isMobile ? 8 : 12 }}
+      >
         <FactorySwitcher />
       </div>
 
-      {/* ===== 左上角：统计指标卡 ===== */}
-      <div className="absolute top-3 left-3 z-40">
-        <StatsOverlay />
-      </div>
+      {/* ===== 桌面端：左上角统计指标卡 ===== */}
+      {!isMobile && (
+        <div className="absolute top-3 left-3 z-40">
+          <StatsOverlay />
+        </div>
+      )}
 
-      {/* ===== 右上角：操作按钮 ===== */}
-      <div className="absolute top-3 right-3 flex gap-2 z-40">
+      {/* ===== 移动端：统计浮窗 ===== */}
+      {isMobile && showMobileStats && (
+        <>
+          <div
+            className="absolute inset-0 z-40 bg-black/40"
+            onClick={() => setShowMobileStats(false)}
+          />
+          <div className="absolute top-10 left-2 right-2 z-50 max-h-[60vh] overflow-y-auto">
+            <StatsOverlay />
+          </div>
+        </>
+      )}
+
+      {/* ===== 右上角：操作按钮组 ===== */}
+      <div
+        className="absolute right-2 z-40 flex gap-1.5 flex-wrap justify-end"
+        style={{ top: isMobile ? 8 : 12 }}
+      >
+        {/* 移动端统计切换 */}
+        {isMobile && (
+          <button
+            className={`px-2.5 py-1.5 text-xs font-medium border rounded-lg backdrop-blur-sm transition-colors ${
+              showMobileStats
+                ? "bg-cyan-600/80 text-white border-cyan-400/50"
+                : "bg-slate-800/90 text-slate-200 border-slate-600/50"
+            }`}
+            onClick={() => {
+              setShowMobileStats(!showMobileStats)
+              setShowMobileWeather(false)
+            }}
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {/* 移动端天气切换 */}
+        {isMobile && (
+          <button
+            className={`px-2.5 py-1.5 text-xs font-medium border rounded-lg backdrop-blur-sm transition-colors ${
+              showMobileWeather
+                ? "bg-cyan-600/80 text-white border-cyan-400/50"
+                : "bg-slate-800/90 text-slate-200 border-slate-600/50"
+            }`}
+            onClick={() => {
+              setShowMobileWeather(!showMobileWeather)
+              setShowMobileStats(false)
+            }}
+          >
+            <Cloud className="h-3.5 w-3.5" />
+          </button>
+        )}
         {/* 卫星地图切换 */}
         <button
-          className={`px-3 py-1.5 text-xs font-medium border rounded-lg backdrop-blur-sm transition-colors ${
+          className={`px-2.5 py-1.5 text-xs font-medium border rounded-lg backdrop-blur-sm transition-colors ${
             showSatelliteMap
               ? "bg-cyan-600/80 text-white border-cyan-400/50 hover:bg-cyan-600/90"
               : "bg-slate-800/90 text-slate-200 border-slate-600/50 hover:bg-slate-700/90"
           }`}
           onClick={toggleSatelliteMap}
         >
-          🛰️ 卫星地图
+          {isMobile ? "🛰️" : "🛰️ 卫星地图"}
         </button>
         {isAdmin && !editMode && (
           <button
-            className="px-3 py-1.5 text-xs font-medium bg-slate-800/90 text-slate-200 border border-slate-600/50 rounded-lg hover:bg-slate-700/90 backdrop-blur-sm transition-colors"
+            className="px-2.5 py-1.5 text-xs font-medium bg-slate-800/90 text-slate-200 border border-slate-600/50 rounded-lg hover:bg-slate-700/90 backdrop-blur-sm transition-colors"
             onClick={() => {
               setEditMode(true)
               setEditTool("move")
             }}
           >
-            ✏️ 编辑地图
+            {isMobile ? "✏️" : "✏️ 编辑地图"}
           </button>
         )}
         {editMode && (
@@ -252,25 +321,49 @@ export default function WebGIS3DPage() {
         />
       )}
 
-      {/* ===== 右侧：天气潮汐面板 ===== */}
-      <div className="absolute top-20 right-3 z-40 w-72">
-        <WeatherTidePanel />
-      </div>
+      {/* ===== 桌面端：右侧天气潮汐面板 ===== */}
+      {!isMobile && (
+        <div className="absolute top-20 right-3 z-40 w-72">
+          <WeatherTidePanel />
+        </div>
+      )}
 
-      {/* ===== 右侧：施工详情面板 ===== */}
+      {/* ===== 移动端：天气浮窗 ===== */}
+      {isMobile && showMobileWeather && (
+        <>
+          <div
+            className="absolute inset-0 z-40 bg-black/40"
+            onClick={() => setShowMobileWeather(false)}
+          />
+          <div className="absolute top-10 right-2 z-50 w-72 max-h-[60vh] overflow-y-auto">
+            <WeatherTidePanel />
+          </div>
+        </>
+      )}
+
+      {/* ===== 施工详情面板（桌面侧边 / 移动端底部抽屉） ===== */}
       <DetailPanel
+        isMobile={isMobile}
         onStartAttendance={fetchSceneData}
         onEndAttendance={fetchSceneData}
       />
 
-      {/* ===== 底部：图例栏 ===== */}
-      <div className="absolute bottom-3 left-3 z-40">
-        <LegendBar />
-      </div>
+      {/* ===== 桌面端：底部图例栏 ===== */}
+      {!isMobile && (
+        <div className="absolute bottom-3 left-3 z-40">
+          <LegendBar />
+        </div>
+      )}
 
-      {/* ===== 场景设置面板（编辑模式下） ===== */}
+      {/* ===== 场景设置面板 ===== */}
       {useSceneStore((s) => s.settingsOpen) && (
-        <div className="absolute top-12 right-3 z-50 w-72 bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-xl p-4 space-y-4 text-slate-200">
+        <div
+          className={`absolute z-50 bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-xl p-4 space-y-4 text-slate-200 ${
+            isMobile
+              ? "inset-x-2 top-12 max-h-[70vh] overflow-y-auto"
+              : "top-12 right-3 w-72"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-sm">场景设置</h3>
             <button
@@ -348,7 +441,74 @@ export default function WebGIS3DPage() {
           )}
         </div>
       )}
+
+      {/* ===== 移动端底部快捷栏 ===== */}
+      {isMobile && !editMode && (
+        <div className="absolute bottom-0 left-0 right-0 z-40 flex items-center justify-around bg-slate-900/90 backdrop-blur-md border-t border-slate-700/50 px-2 py-1.5">
+          <MobileTabBtn
+            icon={<MapPin className="h-4 w-4" />}
+            label="图例"
+            onClick={() => setShowMobileStats(!showMobileStats)}
+          />
+          <MobileTabBtn
+            icon={<BarChart3 className="h-4 w-4" />}
+            label="统计"
+            active={showMobileStats}
+            onClick={() => {
+              setShowMobileStats(!showMobileStats)
+              setShowMobileWeather(false)
+            }}
+          />
+          <MobileTabBtn
+            icon={<Cloud className="h-4 w-4" />}
+            label="天气"
+            active={showMobileWeather}
+            onClick={() => {
+              setShowMobileWeather(!showMobileWeather)
+              setShowMobileStats(false)
+            }}
+          />
+          <MobileTabBtn
+            icon={<ChevronUp className="h-4 w-4" />}
+            label="详情"
+            onClick={() => {
+              const ship = useSceneStore.getState().selectedShip
+              const dock = useSceneStore.getState().selectedDock
+              if (ship || dock) {
+                useSceneStore.getState().setPanelOpen(true)
+              }
+            }}
+          />
+        </div>
+      )}
     </div>
+  )
+}
+
+/** 移动端底部标签按钮 */
+function MobileTabBtn({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: React.ReactNode
+  label: string
+  active?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-[10px] transition-colors ${
+        active
+          ? "text-cyan-400 bg-cyan-500/10"
+          : "text-slate-400 hover:text-slate-200"
+      }`}
+      onClick={onClick}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
   )
 }
 

@@ -6,13 +6,14 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react"
 import { useSceneStore } from "@/stores/scene-store"
 import { GantryCrane } from "@/components/3d/gantry-crane"
 import { BuildingModel } from "@/components/3d/building-model"
+import { ShipModel } from "@/components/3d/ship-model"
 import { SceneLights } from "@/components/3d/scene-lights"
 import { WaterEffect } from "@/components/3d/water-effect"
 import { TerrainGround, getTerrainConfig } from "@/components/3d/terrain-ground"
 import { GroundTexture } from "@/components/3d/ground-texture"
 import { ResizeHandles } from "@/components/3d/editor-tools"
-import { SHIP_STATUS_MAP, DOCK_STATUS_MAP } from "@/lib/constants"
-import type { DockInfo, ShipSceneInfo } from "@/types"
+import { DOCK_STATUS_MAP } from "@/lib/constants"
+import type { DockInfo } from "@/types"
 import * as THREE from "three"
 
 // ==================== 默认设置 ====================
@@ -23,168 +24,6 @@ const DEFAULT_SETTINGS = {
   bgColor: "#0A1628",
   fogNear: 60,
   fogFar: 200,
-}
-
-// ==================== 船舶3D模型 ====================
-function ShipModel({
-  ship,
-  isSelected,
-  editMode,
-  onClick,
-}: {
-  ship: ShipSceneInfo
-  isSelected: boolean
-  editMode: boolean
-  onClick: () => void
-}) {
-  const color =
-    SHIP_STATUS_MAP[ship.status as keyof typeof SHIP_STATUS_MAP]?.color ??
-    "#95A5A6"
-  const l = Math.max(1.5, Number(ship.length) * 0.35)
-  const w = Math.max(0.8, Number(ship.width) * 0.18)
-  const hullHeight = 0.55
-  const x =
-    ship.positionX != null ? (ship.positionX / 50) * 50 : 0
-  const z =
-    ship.positionZ != null ? (ship.positionZ / 30) * 30 + 3 : 8
-  const rotation =
-    ship.rotation != null
-      ? THREE.MathUtils.degToRad(ship.rotation)
-      : 0
-
-  // 船体形状
-  const hullShape = useMemo(() => {
-    const shape = new THREE.Shape()
-    const hw = w / 2
-    const hl = l / 2
-    shape.moveTo(hl, 0)
-    shape.lineTo(hl * 0.3, -hw)
-    shape.lineTo(-hl * 0.9, -hw * 0.7)
-    shape.lineTo(-hl, 0)
-    shape.lineTo(-hl * 0.9, hw * 0.7)
-    shape.lineTo(hl * 0.3, hw)
-    shape.closePath()
-    return shape
-  }, [l, w])
-  const extrudeSettings = useMemo(
-    () => ({
-      steps: 1,
-      depth: hullHeight,
-      bevelEnabled: true,
-      bevelThickness: 0.08,
-      bevelSize: 0.08,
-    }),
-    [hullHeight]
-  )
-
-  const totalWorkers = (ship.activeAttendance ?? []).reduce(
-    (s, a) => s + a.workerCount,
-    0
-  )
-  const totalManHours = (ship.activeAttendance ?? []).reduce(
-    (s, a) => s + a.currentHours * a.workerCount,
-    0
-  )
-
-  return (
-    <group
-      position={[x, 0, z]}
-      rotation={[0, rotation, 0]}
-      onClick={(e) => {
-        e.stopPropagation()
-        onClick()
-      }}
-    >
-      {/* 船体 */}
-      <mesh position={[0, 0, 0]} castShadow receiveShadow>
-        <extrudeGeometry args={[hullShape, extrudeSettings]} />
-        <meshStandardMaterial
-          color={color}
-          roughness={0.4}
-          metalness={0.35}
-          transparent
-          opacity={0.92}
-        />
-      </mesh>
-
-      {/* 上层建筑/甲板室 */}
-      <mesh position={[-l * 0.1, hullHeight, 0]} castShadow>
-        <boxGeometry args={[l * 0.4, hullHeight * 0.7, w * 0.45]} />
-        <meshStandardMaterial color={color} roughness={0.5} />
-      </mesh>
-
-      {/* 烟囱 */}
-      <mesh position={[-l * 0.15, hullHeight + 1.0, w * 0.1]} castShadow>
-        <cylinderGeometry args={[0.2, 0.25, 1.2, 8]} />
-        <meshStandardMaterial
-          color="#4A4A4A"
-          roughness={0.4}
-          metalness={0.5}
-        />
-      </mesh>
-
-      {/* 桅杆 */}
-      <mesh position={[-l * 0.25, hullHeight + 1.5, 0]} castShadow>
-        <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
-        <meshStandardMaterial color="#CCCCCC" roughness={0.3} metalness={0.7} />
-      </mesh>
-
-      {/* 选中高亮环 */}
-      {isSelected && (
-        <mesh
-          position={[0, hullHeight / 2, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
-          <ringGeometry
-            args={[Math.max(w, l) * 0.65, Math.max(w, l) * 0.75, 32]}
-          />
-          <meshBasicMaterial
-            color="#00D4FF"
-            transparent
-            opacity={0.6}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
-
-      {/* 编辑模式高亮 */}
-      {editMode && isSelected && (
-        <mesh
-          position={[0, -0.05, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
-          <ringGeometry
-            args={[Math.max(w, l) * 0.8, Math.max(w, l) * 0.85, 32]}
-          />
-          <meshBasicMaterial
-            color="#00FF88"
-            transparent
-            opacity={0.5}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
-
-      {/* HTML标签 */}
-      <Html position={[0, hullHeight + 1.8, 0]} center distanceFactor={30}>
-        <div className="flex flex-col items-center gap-0.5 pointer-events-none select-none">
-          <div
-            className={`text-[9px] font-bold whitespace-nowrap px-1.5 py-0.5 rounded ${
-              isSelected ? "scale-110 text-[10px]" : ""
-            }`}
-            style={{ backgroundColor: color + "DD", color: "white" }}
-          >
-            {ship.name}
-          </div>
-          {totalWorkers > 0 && (
-            <div className="text-[8px] font-medium text-green-300 bg-black/60 px-1 rounded whitespace-nowrap">
-              👥{totalWorkers}人 ⏱{totalManHours.toFixed(1)}工时
-            </div>
-          )}
-        </div>
-      </Html>
-    </group>
-  )
 }
 
 // ==================== 船坞/码头模型 ====================
