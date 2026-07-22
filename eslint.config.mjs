@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vue 3D 子项目（独立构建，不纳入 Next.js ESLint）
+    "src-vue-3d/**",
+    // Vue 3D 构建产物
+    "public/vue-3d/**",
+    "public/static/vue-3d/**",
   ]),
 ]);
 

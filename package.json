@@ -2,9 +2,14 @@
   "name": "xinya-paint",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "src-vue-3d"
+  ],
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "dev:vue": "npm -w src-vue-3d run dev",
+    "build:vue": "npm -w src-vue-3d run build",
+    "build": "npm run build:vue && next build",
     "start": "next start",
     "lint": "eslint"
   },

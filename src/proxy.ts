@@ -11,7 +11,7 @@ const publicPaths = [
 ]
 
 /** 静态资源路径前缀 */
-const staticPrefixes = ["/_next", "/favicon.ico", "/images", "/models"]
+const staticPrefixes = ["/_next", "/favicon.ico", "/images", "/models", "/textures", "/static"]
 
 /**
  * 从请求中提取 JWT Token

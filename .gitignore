@@ -20,6 +20,9 @@
 # production
 /build
 
+# vue 3d sub-project build output
+/public/static/vue-3d/
+
 # misc
 .DS_Store
 *.pem
