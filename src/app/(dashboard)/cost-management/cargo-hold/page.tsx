@@ -32,6 +32,7 @@ export default function CargoHoldCostPage() {
   // 列筛选状态
   const [filterShipId, setFilterShipId] = useState("")
   const [filterTeamId, setFilterTeamId] = useState("")
+  const [filterRepairNumber, setFilterRepairNumber] = useState("")
 
   const [form, setForm] = useState({
     repairNumber: "", shipId: "", supervisorId: "", cargoRatio: "", originalRatio: "",
@@ -48,6 +49,7 @@ export default function CargoHoldCostPage() {
       if (search) params.set("search", search)
       if (filterShipId) params.set("shipId", filterShipId)
       if (filterTeamId) params.set("teamId", filterTeamId)
+      if (filterRepairNumber) params.set("repairNumber", filterRepairNumber)
       const res = await fetch(`/api/costs/cargo-hold?${params}`)
       const data = await res.json()
       if (data.success) {
@@ -56,7 +58,7 @@ export default function CargoHoldCostPage() {
         setTotal(data.data.pagination.total)
       }
     } finally { setLoading(false) }
-  }, [page, search, year, filterShipId, filterTeamId])
+  }, [page, search, year, filterShipId, filterTeamId, filterRepairNumber])
 
   useEffect(() => {
     fetchCosts()
@@ -68,6 +70,13 @@ export default function CargoHoldCostPage() {
   // 筛选选项
   const shipOptions: FilterOption[] = useMemo(() => ships.map((s) => ({ value: String(s.id), label: s.name })), [ships])
   const teamOptions: FilterOption[] = useMemo(() => teams.map((t) => ({ value: String(t.id), label: t.name })), [teams])
+  const repairNumberOptions: FilterOption[] = useMemo(() => {
+    const seen = new Set<string>()
+    return costs
+      .map((c) => c.repairNumber)
+      .filter((r): r is string => !!r && !seen.has(r) && (seen.add(r), true))
+      .map((r) => ({ value: r, label: r }))
+  }, [costs])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -199,7 +208,7 @@ export default function CargoHoldCostPage() {
           <div className="flex gap-3 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input placeholder="搜索船舶名称..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-9" />
+              <Input placeholder="搜索修理编号/船舶名称..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-9" />
             </div>
             <Select value={String(year)} onValueChange={(v) => { setYear(Number(v)); setPage(1) }}>
               <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
@@ -214,7 +223,7 @@ export default function CargoHoldCostPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>修理编号</TableHead>
+                    <FilterableTableHead title="修理编号" options={repairNumberOptions} value={filterRepairNumber} onChange={(v) => { setFilterRepairNumber(v); setPage(1) }} />
                     <FilterableTableHead title="船名" options={shipOptions} value={filterShipId} onChange={(v) => { setFilterShipId(v); setPage(1) }} />
                     <TableHead>尺寸(m)</TableHead>
                     <TableHead className="text-right">货舱比例</TableHead><TableHead className="text-right">原始比例</TableHead>

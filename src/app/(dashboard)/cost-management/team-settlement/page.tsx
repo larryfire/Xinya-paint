@@ -16,6 +16,7 @@ interface SettlementRecord {
   teamName: string
   settlementCost: number
   constructionCost: number
+  profitLoss: number
 }
 
 export default function TeamSettlementPage() {
@@ -125,12 +126,13 @@ export default function TeamSettlementPage() {
                     <FilterableTableHead title="施工队伍" options={teamOptions} value={filterTeamId} onChange={(v) => { setFilterTeamId(v) }} />
                     <TableHead className="text-right">结算成本</TableHead>
                     <TableHead className="text-right">施工成本</TableHead>
+                    <TableHead className="text-right">盈亏</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-slate-400">
+                      <TableCell colSpan={5} className="text-center text-slate-400">
                         暂无数据
                       </TableCell>
                     </TableRow>
@@ -141,6 +143,9 @@ export default function TeamSettlementPage() {
                         <TableCell>{item.teamName}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.settlementCost)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.constructionCost)}</TableCell>
+                        <TableCell className={`text-right font-medium ${item.profitLoss >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {item.profitLoss >= 0 ? "+" : ""}{formatCurrency(item.profitLoss)}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}

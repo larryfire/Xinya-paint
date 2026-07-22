@@ -37,13 +37,21 @@ export const SHIP_TYPES = [
   "其他",
 ] as const
 
-/** 船舶状态 */
+/** 船舶位置状态 */
 export const SHIP_STATUS_MAP = {
   docked: { label: "坞内", color: "#E74C3C" },
   at_berth: { label: "靠泊", color: "#F39C12" },
-  at_sea: { label: "在航", color: "#2ECC71" },
+  at_sea: { label: "锚地/试航", color: "#2ECC71" },
   maintenance: { label: "维修", color: "#9B59B6" },
 } as const
+
+/** 修理状态 */
+export const REPAIR_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  not_started: { label: "未开工", color: "#95A5A6" },
+  started: { label: "已开工", color: "#3498DB" },
+  in_factory: { label: "在厂修理", color: "#F39C12" },
+  left_factory: { label: "离厂", color: "#2ECC71" },
+}
 
 /** 码头设施状态 */
 export const DOCK_STATUS_MAP = {
@@ -82,6 +90,13 @@ export const WATER_JET_PROJECTS = [
   "水线间水刀",
   "上层建筑水刀",
 ] as const
+
+/** 工程状态 */
+export const PROJECT_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  pending: { label: "待开工", color: "#95A5A6" },
+  in_progress: { label: "进行中", color: "#3498DB" },
+  completed: { label: "已完成", color: "#2ECC71" },
+}
 
 /** 分页默认值 */
 export const DEFAULT_PAGE_SIZE = 20

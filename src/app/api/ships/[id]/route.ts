@@ -9,8 +9,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     await authenticate(request)
     const { id } = await params
 
+    const shipId = parseInt(id)
     const ship = await prisma.ship.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: shipId },
       include: {
         dock: { select: { name: true } },
         berth: { select: { name: true } },
@@ -29,6 +30,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     })
     if (!ship) return error("NOT_FOUND", "船舶不存在", 404)
 
+    // 聚合4类涂装工程
+    const [externalPlates, cargoHolds, waterJets, rustRemovals] = await Promise.all([
+      prisma.externalPlateCost.findMany({
+        where: { shipId },
+        select: { repairNumber: true, area: true, projectStatus: true, team: { select: { name: true } } },
+      }),
+      prisma.cargoHoldCost.findMany({
+        where: { shipId },
+        select: { repairNumber: true, projectStatus: true, team: { select: { name: true } } },
+      }),
+      prisma.waterJetCost.findMany({
+        where: { shipId },
+        select: { repairNumber: true, project: true, projectStatus: true, team: { select: { name: true } } },
+      }),
+      prisma.rustRemovalCost.findMany({
+        where: { shipId },
+        select: { repairNumber: true, projectName: true, projectStatus: true, team: { select: { name: true } } },
+      }),
+    ])
+
+    const projects: { projectType: string; projectName: string; status: string; teamName?: string; repairNumber?: string | null }[] = [
+      ...externalPlates.map((p) => ({ projectType: "外板涂装", projectName: p.area, status: p.projectStatus ?? "in_progress", teamName: p.team?.name, repairNumber: p.repairNumber })),
+      ...cargoHolds.map((p) => ({ projectType: "货舱涂装", projectName: "货舱涂装", status: p.projectStatus ?? "in_progress", teamName: p.team?.name, repairNumber: p.repairNumber })),
+      ...waterJets.map((p) => ({ projectType: "水刀除锈", projectName: p.project, status: p.projectStatus ?? "in_progress", teamName: p.team?.name, repairNumber: p.repairNumber })),
+      ...rustRemovals.map((p) => ({ projectType: "敲铲除锈", projectName: p.projectName, status: p.projectStatus ?? "in_progress", teamName: p.team?.name, repairNumber: p.repairNumber })),
+    ]
+
     const { dock, berth, shipTeams: sts, ...rest } = ship as Record<string, unknown>
     return success({
       ...rest,
@@ -45,6 +73,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         memberCount: st.team._count.members,
         assignedAt: st.assignedAt,
       })),
+      projects,
     })
   } catch (err) {
     if (err instanceof Error && err.name === "UnauthorizedError") return error("UNAUTHORIZED", err.message, 401)
@@ -99,9 +128,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const parsed = assignTeamSchema.safeParse(body)
     if (!parsed.success) return error("VALIDATION_ERROR", parsed.error.issues[0].message)
 
-    const shipTeam = await prisma.shipTeam.create({
-      data: { shipId: parseInt(id), teamId: parsed.data.teamId },
-    })
+    // 分配队伍同时将修理状态设为已开工
+    const [shipTeam] = await prisma.$transaction([
+      prisma.shipTeam.create({
+        data: { shipId: parseInt(id), teamId: parsed.data.teamId },
+      }),
+      prisma.ship.update({
+        where: { id: parseInt(id) },
+        data: { repairStatus: "started" },
+      }),
+    ])
     return success(shipTeam, "分配成功", 201)
   } catch (err: unknown) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {

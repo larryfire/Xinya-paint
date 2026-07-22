@@ -15,19 +15,33 @@ export async function GET(request: NextRequest) {
     const shipId = searchParams.get("shipId") ? parseInt(searchParams.get("shipId")!) : undefined
     const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : undefined
     const teamId = searchParams.get("teamId") ? parseInt(searchParams.get("teamId")!) : undefined
+    const search = searchParams.get("search") || undefined
+    const repairNumber = searchParams.get("repairNumber") || undefined
+    const area = searchParams.get("area") || undefined
+    const projectName = searchParams.get("projectName") || undefined
 
     const where: Record<string, unknown> = {}
     if (shipId) where.shipId = shipId
     if (teamId) where.teamId = teamId
+    if (repairNumber) where.repairNumber = repairNumber
+    if (area) where.area = area
+    if (projectName) where.projectName = projectName
     if (year) {
       where.createdAt = {
         gte: new Date(`${year}-01-01`),
         lte: new Date(`${year}-12-31`),
       }
     }
-    // 数据过滤：leader只看自己队伍的（非leader角色的筛选覆盖此限制）
+    // 数据过滤：leader只看自己队伍的
     if (auth.role === "leader" && auth.teamId && !teamId) {
       where.teamId = auth.teamId
+    }
+    // 搜索：同时匹配修理编号和船舶名称
+    if (search) {
+      where.OR = [
+        { repairNumber: { contains: search } },
+        { ship: { name: { contains: search } } },
+      ]
     }
 
     const [items, total] = await Promise.all([
@@ -57,6 +71,7 @@ export async function GET(request: NextRequest) {
       hourlyRate: Number(c.hourlyRate),
       totalCost: Number(c.manHours) * Number(c.hourlyRate),
       remarks: c.remarks,
+      projectStatus: c.projectStatus,
       createdAt: c.createdAt,
     }))
 

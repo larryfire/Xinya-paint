@@ -72,8 +72,11 @@ model Ship {
   berthId   Int?     @map("berth_id")
   positionX Float?   @map("position_x")
   positionZ Float?   @map("position_z")
-  rotation  Float?
-  createdAt DateTime @default(now()) @map("created_at")
+  rotation       Float?
+  repairStatus   String?  @default("not_started") @map("repair_status")
+  positionDetail String?  @map("position_detail")
+  departureDate  DateTime? @map("departure_date")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   dock               Dock?               @relation("ShipDock", fields: [dockId], references: [id], onDelete: SetNull)
   berth              Dock?               @relation("ShipBerth", fields: [berthId], references: [id], onDelete: SetNull)
@@ -137,6 +140,7 @@ model ExternalPlateCost {
   settlementCost   Float    @map("settlement_cost")
   constructionCost Float    @map("construction_cost")
   remarks          String?
+  projectStatus    String?  @default("in_progress") @map("project_status")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -163,6 +167,7 @@ model CargoHoldCost {
   settlementCost   Float    @map("settlement_cost")
   constructionCost Float    @map("construction_cost")
   remarks          String?
+  projectStatus    String?  @default("in_progress") @map("project_status")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -187,6 +192,7 @@ model RustRemovalCost {
   manHours    Float    @map("man_hours")
   hourlyRate  Float    @default(0) @map("hourly_rate")
   remarks     String?
+  projectStatus String? @default("in_progress") @map("project_status")
   createdAt   DateTime @default(now()) @map("created_at")
 
   ship Ship @relation(fields: [shipId], references: [id], onDelete: Restrict)
@@ -230,6 +236,7 @@ model WaterJetCost {
   settlementCost   Float    @map("settlement_cost")
   constructionCost Float    @map("construction_cost")
   remarks          String?
+  projectStatus    String?  @default("in_progress") @map("project_status")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

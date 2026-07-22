@@ -29,6 +29,9 @@ export default function RustRemovalCostPage() {
   // 列筛选状态
   const [filterShipId, setFilterShipId] = useState("")
   const [filterTeamId, setFilterTeamId] = useState("")
+  const [filterRepairNumber, setFilterRepairNumber] = useState("")
+  const [filterArea, setFilterArea] = useState("")
+  const [filterProjectName, setFilterProjectName] = useState("")
 
   const [form, setForm] = useState({
     repairNumber: "", shipId: "", area: "", projectName: "",
@@ -45,6 +48,9 @@ export default function RustRemovalCostPage() {
       if (search) params.set("search", search)
       if (filterShipId) params.set("shipId", filterShipId)
       if (filterTeamId) params.set("teamId", filterTeamId)
+      if (filterRepairNumber) params.set("repairNumber", filterRepairNumber)
+      if (filterArea) params.set("area", filterArea)
+      if (filterProjectName) params.set("projectName", filterProjectName)
       const res = await fetch(`/api/costs/rust-removal?${params}`)
       const data = await res.json()
       if (data.success) {
@@ -53,7 +59,7 @@ export default function RustRemovalCostPage() {
         setTotal(data.data.pagination.total)
       }
     } finally { setLoading(false) }
-  }, [page, search, year, filterShipId, filterTeamId])
+  }, [page, search, year, filterShipId, filterTeamId, filterRepairNumber, filterArea, filterProjectName])
 
   useEffect(() => {
     fetchCosts()
@@ -64,6 +70,27 @@ export default function RustRemovalCostPage() {
   // 筛选选项
   const shipOptions: FilterOption[] = useMemo(() => ships.map((s) => ({ value: String(s.id), label: s.name })), [ships])
   const teamOptions: FilterOption[] = useMemo(() => teams.map((t) => ({ value: String(t.id), label: t.name })), [teams])
+  const repairNumberOptions: FilterOption[] = useMemo(() => {
+    const seen = new Set<string>()
+    return costs
+      .map((c) => c.repairNumber)
+      .filter((r): r is string => !!r && !seen.has(r) && (seen.add(r), true))
+      .map((r) => ({ value: r, label: r }))
+  }, [costs])
+  const areaOptions: FilterOption[] = useMemo(() => {
+    const seen = new Set<string>()
+    return costs
+      .map((c) => c.area)
+      .filter((a): a is string => !!a && !seen.has(a) && (seen.add(a), true))
+      .map((a) => ({ value: a, label: a }))
+  }, [costs])
+  const projectNameOptions: FilterOption[] = useMemo(() => {
+    const seen = new Set<string>()
+    return costs
+      .map((c) => c.projectName)
+      .filter((p): p is string => !!p && !seen.has(p) && (seen.add(p), true))
+      .map((p) => ({ value: p, label: p }))
+  }, [costs])
 
   const handleSubmit = async () => {
     if (!form.shipId || !form.area || !form.projectName || !form.manHours || !form.hourlyRate) return
@@ -155,7 +182,7 @@ export default function RustRemovalCostPage() {
           <div className="flex gap-3 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input placeholder="搜索船舶名称..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-9" />
+              <Input placeholder="搜索修理编号/船舶名称..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-9" />
             </div>
             <Select value={String(year)} onValueChange={(v) => { setYear(Number(v)); setPage(1) }}>
               <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
@@ -170,10 +197,11 @@ export default function RustRemovalCostPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>修理编号</TableHead>
+                    <FilterableTableHead title="修理编号" options={repairNumberOptions} value={filterRepairNumber} onChange={(v) => { setFilterRepairNumber(v); setPage(1) }} />
                     <FilterableTableHead title="船名" options={shipOptions} value={filterShipId} onChange={(v) => { setFilterShipId(v); setPage(1) }} />
                     <TableHead>尺寸(m)</TableHead>
-                    <TableHead>敲铲区域</TableHead><TableHead>工程项目</TableHead>
+                    <FilterableTableHead title="敲铲区域" options={areaOptions} value={filterArea} onChange={(v) => { setFilterArea(v); setPage(1) }} />
+                    <FilterableTableHead title="工程项目" options={projectNameOptions} value={filterProjectName} onChange={(v) => { setFilterProjectName(v); setPage(1) }} />
                     <FilterableTableHead title="施工队伍" options={teamOptions} value={filterTeamId} onChange={(v) => { setFilterTeamId(v); setPage(1) }} />
                     <TableHead className="text-right">工时(h)</TableHead><TableHead className="text-right">单价</TableHead>
                     <TableHead className="text-right">工时花费</TableHead>

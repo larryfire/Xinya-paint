@@ -33,24 +33,44 @@ export async function GET(request: NextRequest) {
       prisma.ship.count({ where }),
     ])
 
-    const data = items.map((s) => ({
-      id: s.id,
-      name: s.name,
-      shipType: s.shipType,
-      length: Number(s.length),
-      width: Number(s.width),
-      height: Number(s.height),
-      status: s.status,
-      dockId: s.dockId,
-      dockName: s.dock?.name ?? null,
-      berthId: s.berthId,
-      berthName: s.berth?.name ?? null,
-      positionX: s.positionX,
-      positionZ: s.positionZ,
-      rotation: s.rotation,
-      teamCount: s._count.shipTeams,
-      createdAt: s.createdAt,
-    }))
+    const data = items.map((s) => {
+      // 计算位置描述
+      let positionLabel = ""
+      if (s.dock?.name) {
+        positionLabel = s.dock.name
+        if (s.positionDetail) positionLabel += ` ${s.positionDetail}`
+      } else if (s.berth?.name) {
+        positionLabel = s.berth.name
+        if (s.positionDetail) positionLabel += ` ${s.positionDetail}档`
+      } else if (s.status === "at_sea") {
+        positionLabel = s.positionDetail || "锚地"
+      } else {
+        positionLabel = s.positionDetail || "--"
+      }
+
+      return {
+        id: s.id,
+        name: s.name,
+        shipType: s.shipType,
+        length: Number(s.length),
+        width: Number(s.width),
+        height: Number(s.height),
+        status: s.status,
+        dockId: s.dockId,
+        dockName: s.dock?.name ?? null,
+        berthId: s.berthId,
+        berthName: s.berth?.name ?? null,
+        positionX: s.positionX,
+        positionZ: s.positionZ,
+        rotation: s.rotation,
+        repairStatus: s.repairStatus,
+        positionDetail: s.positionDetail,
+        positionLabel,
+        departureDate: s.departureDate,
+        teamCount: s._count.shipTeams,
+        createdAt: s.createdAt,
+      }
+    })
 
     return paginated(data, total, page, pageSize)
   } catch (err) {

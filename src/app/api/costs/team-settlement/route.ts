@@ -62,13 +62,18 @@ export async function GET(request: NextRequest) {
     })
     const teamMap = new Map(teams.map((t) => [t.id, t.name]))
 
-    const data = items.map((i) => ({
-      period: type === "monthly" ? `${year}-${String(month).padStart(2, "0")}` : String(year),
-      teamId: i.teamId,
-      teamName: teamMap.get(i.teamId) ?? "未知队伍",
-      settlementCost: Number(i._sum.settlementCost ?? 0),
-      constructionCost: Number(i._sum.constructionCost ?? 0),
-    }))
+    const data = items.map((i) => {
+      const settlementCost = Number(i._sum.settlementCost ?? 0)
+      const constructionCost = Number(i._sum.constructionCost ?? 0)
+      return {
+        period: type === "monthly" ? `${year}-${String(month).padStart(2, "0")}` : String(year),
+        teamId: i.teamId,
+        teamName: teamMap.get(i.teamId) ?? "未知队伍",
+        settlementCost,
+        constructionCost,
+        profitLoss: settlementCost - constructionCost,
+      }
+    })
 
     return success(data, "获取结算报表成功")
   } catch (err) {

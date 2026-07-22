@@ -22,6 +22,7 @@ export default function WaterJetCostPage() {
   const [ships, setShips] = useState<ShipInfo[]>([])
   const [teams, setTeams] = useState<TeamInfo[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
   const [year, setYear] = useState(currentYear)
   const [shipId, setShipId] = useState("")
   const [page, setPage] = useState(1)
@@ -31,6 +32,7 @@ export default function WaterJetCostPage() {
   // 列筛选状态
   const [filterProject, setFilterProject] = useState("")
   const [filterTeamId, setFilterTeamId] = useState("")
+  const [filterRepairNumber, setFilterRepairNumber] = useState("")
 
   // 表单状态
   const [form, setForm] = useState({
@@ -44,9 +46,11 @@ export default function WaterJetCostPage() {
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(DEFAULT_PAGE_SIZE) })
       if (year) params.set("year", String(year))
+      if (search) params.set("search", search)
       if (shipId) params.set("shipId", shipId)
       if (filterProject) params.set("project", filterProject)
       if (filterTeamId) params.set("teamId", filterTeamId)
+      if (filterRepairNumber) params.set("repairNumber", filterRepairNumber)
       const res = await fetch(`/api/costs/water-jet?${params}`)
       const data = await res.json()
       if (data.success) {
@@ -54,7 +58,7 @@ export default function WaterJetCostPage() {
         setTotalPages(data.data.pagination.totalPages)
       }
     } finally { setLoading(false) }
-  }, [page, year, shipId, filterProject, filterTeamId])
+  }, [page, search, year, shipId, filterProject, filterTeamId, filterRepairNumber])
 
   const fetchOptions = useCallback(async () => {
     try {
@@ -76,6 +80,13 @@ export default function WaterJetCostPage() {
   const shipOptions: FilterOption[] = useMemo(() => ships.map((s) => ({ value: String(s.id), label: s.name })), [ships])
   const projectOptions: FilterOption[] = useMemo(() => WATER_JET_PROJECTS.map((p) => ({ value: p, label: p })), [])
   const teamOptions: FilterOption[] = useMemo(() => teams.map((t) => ({ value: String(t.id), label: t.name })), [teams])
+  const repairNumberOptions: FilterOption[] = useMemo(() => {
+    const seen = new Set<string>()
+    return costs
+      .map((c) => c.repairNumber)
+      .filter((r): r is string => !!r && !seen.has(r) && (seen.add(r), true))
+      .map((r) => ({ value: r, label: r }))
+  }, [costs])
 
   const handleSubmit = async () => {
     if (!form.shipId || !form.dockEntryTime || !form.project || !form.teamId || !form.settlementCost || !form.constructionCost) return
@@ -203,13 +214,7 @@ export default function WaterJetCostPage() {
             </div>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Select value={shipId} onValueChange={(v) => { setShipId(v === "all" ? "" : v); setPage(1) }}>
-                <SelectTrigger className="pl-9"><SelectValue placeholder="搜索船舶..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部船舶</SelectItem>
-                  {ships.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Input placeholder="搜索修理编号/船舶名称..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-9" />
             </div>
           </div>
         </CardHeader>
@@ -221,7 +226,7 @@ export default function WaterJetCostPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>修理编号</TableHead>
+                    <FilterableTableHead title="修理编号" options={repairNumberOptions} value={filterRepairNumber} onChange={(v) => { setFilterRepairNumber(v); setPage(1) }} />
                     <TableHead>时间</TableHead>
                     <FilterableTableHead title="船名" options={shipOptions} value={shipId} onChange={(v) => { setShipId(v); setPage(1) }} />
                     <TableHead>船舶尺寸</TableHead>

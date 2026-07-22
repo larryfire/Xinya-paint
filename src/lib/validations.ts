@@ -44,6 +44,9 @@ export const createShipSchema = z.object({
   positionX: z.number().optional().nullable(),
   positionZ: z.number().optional().nullable(),
   rotation: z.number().optional().nullable(),
+  repairStatus: z.enum(["not_started", "started", "in_factory", "left_factory"]).optional(),
+  positionDetail: z.string().max(100).optional().nullable(),
+  departureDate: z.string().optional().nullable(),
 })
 
 export const updateShipSchema = createShipSchema.partial()
@@ -59,6 +62,7 @@ export const createExternalPlateCostSchema = z.object({
   settlementCost: z.number().min(0, "结算成本不能为负"),
   constructionCost: z.number().min(0, "施工成本不能为负"),
   remarks: z.string().optional(),
+  projectStatus: z.enum(["pending", "in_progress", "completed"]).optional(),
 })
 
 export const updateExternalPlateCostSchema = createExternalPlateCostSchema.partial()
@@ -74,6 +78,7 @@ export const createCargoHoldCostSchema = z.object({
   settlementCost: z.number().min(0, "结算成本不能为负"),
   constructionCost: z.number().min(0, "施工成本不能为负"),
   remarks: z.string().optional(),
+  projectStatus: z.enum(["pending", "in_progress", "completed"]).optional(),
 })
 
 export const updateCargoHoldCostSchema = createCargoHoldCostSchema.partial()
@@ -88,6 +93,7 @@ export const createRustRemovalCostSchema = z.object({
   manHours: z.number().min(0, "工时不能为负"),
   hourlyRate: z.number().min(0, "工时单价不能为负"),
   remarks: z.string().optional(),
+  projectStatus: z.enum(["pending", "in_progress", "completed"]).optional(),
 })
 
 export const updateRustRemovalCostSchema = createRustRemovalCostSchema.partial()
@@ -102,6 +108,7 @@ export const createWaterJetCostSchema = z.object({
   settlementCost: z.number().min(0, "结算成本不能为负"),
   constructionCost: z.number().min(0, "施工成本不能为负"),
   remarks: z.string().optional(),
+  projectStatus: z.enum(["pending", "in_progress", "completed"]).optional(),
 })
 
 // ==================== 安全处罚 ====================

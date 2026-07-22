@@ -41,6 +41,14 @@ export interface ShipInfo {
   positionX?: number | null
   positionZ?: number | null
   rotation?: number | null
+  /** 修理状态: not_started | started | in_factory | left_factory */
+  repairStatus?: string | null
+  /** 位置详情: 如 "3档"、"左侧"、"锚地"、"试航" */
+  positionDetail?: string | null
+  /** 格式化后的位置描述 */
+  positionLabel?: string
+  /** 计划走船日期 */
+  departureDate?: string | null
   createdAt: string
 }
 
@@ -73,6 +81,7 @@ export interface ExternalPlateCostInfo {
   constructionCost: number
   profitLoss?: number
   profitLossRate?: number
+  projectStatus?: string | null
   remarks?: string | null
   createdAt: string
   updatedAt: string
@@ -96,6 +105,7 @@ export interface CargoHoldCostInfo {
   constructionCost: number
   profitLoss?: number
   profitLossRate?: number
+  projectStatus?: string | null
   remarks?: string | null
   createdAt: string
   updatedAt: string
@@ -115,6 +125,7 @@ export interface RustRemovalCostInfo {
   manHours: number
   hourlyRate: number
   totalCost?: number
+  projectStatus?: string | null
   remarks?: string | null
   createdAt: string
 }
@@ -134,9 +145,24 @@ export interface WaterJetCostInfo {
   constructionCost: number
   profitLoss?: number
   profitLossRate?: number
+  projectStatus?: string | null
   remarks?: string | null
   createdAt: string
   updatedAt: string
+}
+
+/** 船舶涂装工程汇总（用于单船管理面板） */
+export interface ShipProjectInfo {
+  /** 工程类型: 外板涂装 | 货舱涂装 | 水刀除锈 | 敲铲除锈 */
+  projectType: string
+  /** 工程名称（区域/项目名） */
+  projectName: string
+  /** 工程状态 */
+  status: string
+  /** 负责队伍 */
+  teamName?: string
+  /** 修理编号 */
+  repairNumber?: string | null
 }
 
 export interface TeamSettlementInfo {
@@ -145,6 +171,8 @@ export interface TeamSettlementInfo {
   teamName: string
   settlementCost: number
   constructionCost: number
+  /** 盈亏 = 结算成本 - 施工成本，正数为盈利、负数为亏损 */
+  profitLoss: number
 }
 
 export interface SafetyPunishmentInfo {
