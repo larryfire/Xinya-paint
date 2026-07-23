@@ -229,6 +229,43 @@ export interface AttendanceInfo {
   createdAt: string
 }
 
+export interface WorkHourTimeSlotInfo {
+  id: number
+  workHourEntryId: number
+  startTime: string
+  endTime: string
+  hours: number
+  createdAt: string
+}
+
+export interface WorkHourEntryInfo {
+  id: number
+  workHourRecordId: number
+  craftType: string
+  workerCount: number
+  workDays: number
+  totalHours?: number
+  createdAt: string
+  timeSlots: WorkHourTimeSlotInfo[]
+}
+
+export interface WorkHourRecordInfo {
+  id: number
+  recordDate: string
+  shipId: number
+  shipName?: string
+  teamId: number
+  teamName?: string
+  note?: string | null
+  createdBy: number
+  createdByName?: string
+  totalWorkers?: number
+  totalWorkDays?: number
+  createdAt: string
+  updatedAt: string
+  entries: WorkHourEntryInfo[]
+}
+
 export interface ActiveAttendanceInfo {
   id: number
   teamId: number

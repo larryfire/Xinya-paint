@@ -15,6 +15,9 @@ export type Permission =
   | "cost:water_jet:read"
   | "cost:water_jet:write"
   | "cost:team_settlement:read"
+  | "work_hour:read"
+  | "work_hour:write"
+  | "work_hour:export"
   | "safety:view"
   | "safety:manage"
   | "dock:read"
@@ -40,6 +43,9 @@ const rolePermissions: Record<Role, Permission[]> = {
     "cost:water_jet:read",
     "cost:water_jet:write",
     "cost:team_settlement:read",
+    "work_hour:read",
+    "work_hour:write",
+    "work_hour:export",
     "safety:view",
     "safety:manage",
     "dock:read",
@@ -58,6 +64,9 @@ const rolePermissions: Record<Role, Permission[]> = {
     "cost:water_jet:read",
     "cost:water_jet:write",
     "cost:team_settlement:read",
+    "work_hour:read",
+    "work_hour:write",
+    "work_hour:export",
     "safety:view",
     "safety:manage",
     "dock:read",
@@ -72,6 +81,8 @@ const rolePermissions: Record<Role, Permission[]> = {
     "cost:rust_removal:read",
     "cost:water_jet:read",
     "cost:team_settlement:read",
+    "work_hour:read",
+    "work_hour:write",
     "safety:view",
     "dock:read",
     "scene:view",
@@ -130,6 +141,12 @@ export const allMenuItems: MenuItem[] = [
     permission: "ship:read",
   },
   {
+    label: "每日工时",
+    href: "/work-hours",
+    icon: "Clock",
+    permission: "work_hour:read",
+  },
+  {
     label: "3D船舶动态",
     href: "/3d-dynamic",
     icon: "Map",
@@ -183,6 +200,24 @@ export function getCostFilter(
       return {}
     case "supervisor":
       return { supervisorId: userId }
+    case "leader":
+      return { teamId: teamId ?? -1 }
+    default:
+      return { id: -1 }
+  }
+}
+
+/**
+ * 获取每日工时数据的查询过滤条件
+ * admin/supervisor: 查看全部
+ * leader: 只看自己队伍的
+ * worker: 无权限返回空
+ */
+export function getWorkHourFilter(role: string, teamId: number | null) {
+  switch (role) {
+    case "admin":
+    case "supervisor":
+      return {}
     case "leader":
       return { teamId: teamId ?? -1 }
     default:

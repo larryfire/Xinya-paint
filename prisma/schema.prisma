@@ -33,6 +33,7 @@ model User {
   cargoHoldCosts     CargoHoldCost[]      @relation("CargoSupervisor")
   safetyIssued       SafetyPunishment[]   @relation("Issuer")
   safetyPunished     SafetyPunishment[]   @relation("PunishedPerson")
+  workHourRecords    WorkHourRecord[]
 
   @@map("users")
 }
@@ -54,6 +55,7 @@ model Team {
   safetyPunishments   SafetyPunishment[]
   shipTeams           ShipTeam[]
   attendances         Attendance[]
+  workHourRecords     WorkHourRecord[]
 
   @@map("teams")
 }
@@ -86,6 +88,7 @@ model Ship {
   waterJetCosts      WaterJetCost[]
   shipTeams          ShipTeam[]
   attendances        Attendance[]
+  workHourRecords    WorkHourRecord[]
 
   @@map("ships")
 }
@@ -303,4 +306,59 @@ model SceneSettings {
   updatedAt         DateTime @updatedAt
 
   @@map("scene_settings")
+}
+
+// ==================== 每日工时主记录表 ====================
+model WorkHourRecord {
+  id         Int      @id @default(autoincrement())
+  recordDate DateTime @map("record_date")
+  shipId     Int      @map("ship_id")
+  teamId     Int      @map("team_id")
+  note       String?  @map("note")
+  createdBy  Int      @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  ship    Ship @relation(fields: [shipId], references: [id], onDelete: Restrict)
+  team    Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  entries WorkHourEntry[]
+
+  @@unique([recordDate, shipId, teamId])
+  @@index([recordDate])
+  @@index([shipId])
+  @@index([teamId])
+  @@index([createdBy])
+  @@map("work_hour_records")
+}
+
+// ==================== 工种工时明细表 ====================
+model WorkHourEntry {
+  id               Int     @id @default(autoincrement())
+  workHourRecordId Int     @map("work_hour_record_id")
+  craftType        String  @map("craft_type")
+  workerCount      Int     @map("worker_count")
+  workDays         Float   @map("work_days")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  record    WorkHourRecord @relation(fields: [workHourRecordId], references: [id], onDelete: Cascade)
+  timeSlots WorkHourTimeSlot[]
+
+  @@index([workHourRecordId])
+  @@map("work_hour_entries")
+}
+
+// ==================== 工作时间段表 ====================
+model WorkHourTimeSlot {
+  id              Int      @id @default(autoincrement())
+  workHourEntryId Int      @map("work_hour_entry_id")
+  startTime       DateTime @map("start_time")
+  endTime         DateTime @map("end_time")
+  hours           Float    @map("hours")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  entry WorkHourEntry @relation(fields: [workHourEntryId], references: [id], onDelete: Cascade)
+
+  @@index([workHourEntryId])
+  @@map("work_hour_time_slots")
 }

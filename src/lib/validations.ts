@@ -154,6 +154,28 @@ export const updateAttendanceSchema = z.object({
   endTime: z.string().optional(), // 结束出勤
 })
 
+// ==================== 每日工时记录 ====================
+const workHourTimeSlotSchema = z.object({
+  startTime: z.string().min(1, "开始时间不能为空"),
+  endTime: z.string().min(1, "结束时间不能为空"),
+})
+
+const workHourEntrySchema = z.object({
+  craftType: z.string().min(1, "工种不能为空").max(50),
+  workerCount: z.number().positive("人数必须大于0"),
+  timeSlots: z.array(workHourTimeSlotSchema).min(1, "至少需要一个时间段"),
+})
+
+export const createWorkHourRecordSchema = z.object({
+  recordDate: z.string().min(1, "请选择日期"),
+  shipId: z.number().positive("请选择船舶"),
+  teamId: z.number().positive("请选择施工队伍"),
+  note: z.string().optional(),
+  entries: z.array(workHourEntrySchema).min(1, "至少需要一条工种记录"),
+})
+
+export const updateWorkHourRecordSchema = createWorkHourRecordSchema.partial()
+
 // ==================== 船舶位置更新 ====================
 export const updateShipPositionSchema = z.object({
   positionX: z.number(),

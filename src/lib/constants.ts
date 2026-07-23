@@ -100,3 +100,13 @@ export const PROJECT_STATUS_MAP: Record<string, { label: string; color: string }
 
 /** 分页默认值 */
 export const DEFAULT_PAGE_SIZE = 20
+
+/** 每日工时默认工种 */
+export const WORK_HOUR_CRAFT_TYPES = [
+  "大工",
+  "小工",
+  "带班",
+] as const
+
+/** 一工等于多少小时 */
+export const WORK_HOURS_PER_DAY = 8

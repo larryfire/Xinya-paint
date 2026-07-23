@@ -39,3 +39,28 @@ export function formatDateTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date
   return d.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
 }
+
+/** 格式化为 HH:mm */
+export function formatHHMM(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  return d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false })
+}
+
+/** 根据记录日期字符串和 HH:mm 时间字符串构造 Date */
+export function parseRecordDateTime(recordDate: string, time: string): Date {
+  return new Date(`${recordDate}T${time}:00`)
+}
+
+/** 计算两个 Date 之间的小时数 */
+export function calcHours(startTime: Date | string, endTime: Date | string): number {
+  const startMs = new Date(startTime).getTime()
+  const endMs = new Date(endTime).getTime()
+  const diff = endMs - startMs
+  return diff > 0 ? diff / (1000 * 60 * 60) : 0
+}
+
+/** 根据总工时计算计工数（一工=8小时） */
+export function calcWorkDays(totalHours: number, hoursPerDay = 8): number {
+  if (totalHours <= 0 || hoursPerDay <= 0) return 0
+  return Math.round((totalHours / hoursPerDay) * 100) / 100
+}

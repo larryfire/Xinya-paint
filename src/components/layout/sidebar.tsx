@@ -20,6 +20,7 @@ import {
   Archive,
   Droplets,
   Wrench,
+  Clock,
   ChevronLeft,
   ChevronDown,
 } from "lucide-react"
@@ -36,6 +37,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Archive,
   Droplets,
   Wrench,
+  Clock,
 }
 
 interface SidebarProps {

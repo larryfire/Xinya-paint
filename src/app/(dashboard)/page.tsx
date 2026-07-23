@@ -1,8 +1,10 @@
 "use client"
 
 import { useAuthStore } from "@/stores/auth-store"
+import { hasPermission } from "@/lib/permissions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Ship, Users, Shield, DollarSign } from "lucide-react"
+import { Ship, Users, Shield, DollarSign, Clock } from "lucide-react"
+import Link from "next/link"
 
 export default function DashboardPage() {
   const { user } = useAuthStore()
@@ -97,19 +99,39 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Users className="h-6 w-6 text-green-600" />
+        <Link href="/personnel-management">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Users className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">人员管理</h3>
+                  <p className="text-sm text-slate-500">队伍与员工信息管理</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold">人员管理</h3>
-                <p className="text-sm text-slate-500">队伍与员工信息管理</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {user && hasPermission(user.role, "work_hour:read") && (
+          <Link href="/work-hours">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Clock className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">每日工时</h3>
+                    <p className="text-sm text-slate-500">记录施工队每日工时与导出</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
       </div>
     </div>
   )
