@@ -22,7 +22,6 @@ export type Permission =
   | "safety:manage"
   | "dock:read"
   | "dock:manage"
-  | "scene:view"
   | "stats:view"
 
 export type Role = "admin" | "supervisor" | "leader" | "worker"
@@ -50,7 +49,6 @@ const rolePermissions: Record<Role, Permission[]> = {
     "safety:manage",
     "dock:read",
     "dock:manage",
-    "scene:view",
     "stats:view",
   ],
   supervisor: [
@@ -70,7 +68,6 @@ const rolePermissions: Record<Role, Permission[]> = {
     "safety:view",
     "safety:manage",
     "dock:read",
-    "scene:view",
     "stats:view",
     "team:read",
   ],
@@ -85,11 +82,10 @@ const rolePermissions: Record<Role, Permission[]> = {
     "work_hour:write",
     "safety:view",
     "dock:read",
-    "scene:view",
     "stats:view",
     "team:read",
   ],
-  worker: ["ship:read", "safety:view", "scene:view", "team:read"],
+  worker: ["ship:read", "safety:view", "team:read"],
 }
 
 /** 判断角色是否拥有指定权限 */
@@ -145,12 +141,6 @@ export const allMenuItems: MenuItem[] = [
     href: "/work-hours",
     icon: "Clock",
     permission: "work_hour:read",
-  },
-  {
-    label: "3D船舶动态",
-    href: "/3d-dynamic",
-    icon: "Map",
-    permission: "scene:view",
   },
   {
     label: "注册审核",

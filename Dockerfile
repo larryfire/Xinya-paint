@@ -15,8 +15,6 @@ COPY . .
 # 生产环境使用 MySQL/MariaDB，构建时替换 provider
 RUN sed -i 's/provider = "sqlite"/provider = "mysql"/' prisma/schema.prisma
 RUN npx prisma generate
-# 先构建 Vue 3D 子项目，输出到 public/vue-3d/
-RUN npm run build:vue
 RUN npm run build
 
 # 3. 运行阶段

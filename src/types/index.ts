@@ -200,19 +200,6 @@ export interface ShipTeamInfo {
   assignedAt: string
 }
 
-export interface SceneData {
-  docks: DockInfo[]
-  ships: ShipSceneInfo[]
-}
-
-/** 增强版船舶信息（用于3D场景，含出勤和队伍数据） */
-export interface ShipSceneInfo extends ShipInfo {
-  teams?: ShipTeamInfo[]
-  activeAttendance?: ActiveAttendanceInfo[]
-  totalSettlementCost?: number
-  totalConstructionCost?: number
-}
-
 export interface AttendanceInfo {
   id: number
   teamId: number
@@ -264,61 +251,6 @@ export interface WorkHourRecordInfo {
   createdAt: string
   updatedAt: string
   entries: WorkHourEntryInfo[]
-}
-
-export interface ActiveAttendanceInfo {
-  id: number
-  teamId: number
-  teamName: string
-  workerCount: number
-  startTime: string
-  /** 实时工时（小时） */
-  currentHours: number
-}
-
-export interface SceneSettingsInfo {
-  id: number
-  factoryId: number
-  coastlineZ: number
-  waterOpacity: number
-  ambientIntensity: number
-  bgColor: string
-  fogNear: number
-  fogFar: number
-  factoryLayout?: string | null
-  gantryCraneCount: number
-  mapCenterX: number
-  mapCenterZ: number
-}
-
-/** 门座式起重机信息 */
-export interface GantryCraneInfo {
-  id: number
-  name: string
-  factoryId: number
-  positionX: number
-  positionZ: number
-  rotation: number
-  dockId?: number | null
-  status: "active" | "maintenance" | "idle"
-}
-
-/** 天气潮汐数据 */
-export interface WeatherTideData {
-  temperature: number
-  weather: string
-  weatherIcon: string
-  windDirection: string
-  windSpeed: number
-  humidity: number
-  pressure: number
-  visibility: number
-  tideHeight: number
-  tideTrend: "rising" | "falling"
-  nextHighTide: { time: string; height: number }
-  nextLowTide: { time: string; height: number }
-  bestDockTimes: { start: string; end: string; score: number; label: string }[]
-  hourlyForecast: { time: string; tideHeight: number }[]
 }
 
 export interface Pagination {

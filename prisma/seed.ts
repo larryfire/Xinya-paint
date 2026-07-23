@@ -241,18 +241,6 @@ async function main() {
     if (!existing) await prisma.gantryCrane.create({ data: crane })
   }
 
-  // 场景设置 - 两个厂区
-  await prisma.sceneSettings.upsert({
-    where: { factoryId: 1 },
-    create: { factoryId: 1, coastlineZ: 0, waterOpacity: 0.75, ambientIntensity: 0.5, bgColor: "#0A1628", fogNear: 60, fogFar: 200 },
-    update: { bgColor: "#0A1628", fogNear: 60, fogFar: 200 },
-  })
-  await prisma.sceneSettings.upsert({
-    where: { factoryId: 2 },
-    create: { factoryId: 2, coastlineZ: 2, waterOpacity: 0.7, ambientIntensity: 0.45, bgColor: "#0A1628", fogNear: 55, fogFar: 180 },
-    update: { coastlineZ: 2, bgColor: "#0A1628" },
-  })
-
   // 施工队关联（跨厂区）
   await prisma.shipTeam.upsert({ where: { id: 1 }, update: {}, create: { shipId: 1, teamId: 1 } })
   await prisma.shipTeam.upsert({ where: { id: 2 }, update: {}, create: { shipId: 1, teamId: 3 } })

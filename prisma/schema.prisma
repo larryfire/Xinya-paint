@@ -289,25 +289,6 @@ model Attendance {
   @@map("attendances")
 }
 
-// ==================== 3D场景设置表（双厂区，id=1鑫亚，id=2亚泰） ====================
-model SceneSettings {
-  id                Int     @id @default(autoincrement())
-  factoryId         Int     @unique @default(1)
-  coastlineZ        Float   @default(0)
-  waterOpacity      Float   @default(0.6)
-  ambientIntensity  Float   @default(0.6)
-  bgColor           String  @default("#0A1628")
-  fogNear           Float   @default(60)
-  fogFar            Float   @default(200)
-  factoryLayout     String?
-  gantryCraneCount  Int     @default(4)
-  mapCenterX        Float   @default(0)
-  mapCenterZ        Float   @default(0)
-  updatedAt         DateTime @updatedAt
-
-  @@map("scene_settings")
-}
-
 // ==================== 每日工时主记录表 ====================
 model WorkHourRecord {
   id         Int      @id @default(autoincrement())
