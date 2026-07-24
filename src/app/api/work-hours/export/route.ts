@@ -3,7 +3,7 @@ import * as XLSX from "xlsx"
 import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { error } from "@/lib/api-response"
-import { getWorkHourFilter } from "@/lib/permissions"
+import { getWorkHourFilter } from "@/lib/permissions-server"
 import { formatDate, formatHHMM, calcHours } from "@/lib/utils"
 
 /** 导出每日工时记录为 Excel（浏览器下载） */

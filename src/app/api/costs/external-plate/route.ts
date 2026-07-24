@@ -2,7 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
-import { getCostFilter, getSupervisorShipIds } from "@/lib/permissions"
+import { getCostFilter, getSupervisorShipIds } from "@/lib/permissions-server"
 import { createExternalPlateCostSchema } from "@/lib/validations"
 
 export async function GET(request: NextRequest) {

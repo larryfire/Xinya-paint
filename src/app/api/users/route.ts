@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
 import { createUserSchema } from "@/lib/validations"
-import { getSupervisorTeamIds } from "@/lib/permissions"
+import { getSupervisorTeamIds } from "@/lib/permissions-server"
 
 export async function GET(request: NextRequest) {
   try {

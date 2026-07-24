@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
 import { createWorkHourRecordSchema } from "@/lib/validations"
-import { getWorkHourFilter, getLeaderShipIds, getSupervisorShipIds } from "@/lib/permissions"
+import { getWorkHourFilter, getLeaderShipIds, getSupervisorShipIds } from "@/lib/permissions-server"
 import { calcHours, calcWorkDays } from "@/lib/utils"
 import { WORK_HOURS_PER_DAY } from "@/lib/constants"
 

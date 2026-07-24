@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
 import { createAttendanceSchema } from "@/lib/validations"
-import { getSupervisorShipIds } from "@/lib/permissions"
+import { getSupervisorShipIds } from "@/lib/permissions-server"
 
 /** 开始出勤 */
 export async function POST(request: NextRequest) {

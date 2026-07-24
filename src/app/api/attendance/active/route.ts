@@ -2,7 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error } from "@/lib/api-response"
-import { getSupervisorShipIds } from "@/lib/permissions"
+import { getSupervisorShipIds } from "@/lib/permissions-server"
 
 /** 获取当前所有活跃出勤（endTime=null） */
 export async function GET(request: NextRequest) {

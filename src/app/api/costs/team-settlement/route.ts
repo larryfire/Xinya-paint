@@ -2,7 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error } from "@/lib/api-response"
-import { getSupervisorShipIds } from "@/lib/permissions"
+import { getSupervisorShipIds } from "@/lib/permissions-server"
 
 /**
  * 内协队伍结算报表 - 聚合查询
