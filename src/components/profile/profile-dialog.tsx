@@ -34,7 +34,6 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "管理员",
   supervisor: "涂装主管",
   leader: "工地主任",
-  worker: "员工",
 }
 
 /** 格式化日期 */

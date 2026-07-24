@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
 import { createWorkHourRecordSchema } from "@/lib/validations"
-import { getWorkHourFilter } from "@/lib/permissions"
+import { getWorkHourFilter, getLeaderShipIds, getSupervisorShipIds } from "@/lib/permissions"
 import { calcHours, calcWorkDays } from "@/lib/utils"
 import { WORK_HOURS_PER_DAY } from "@/lib/constants"
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const shipId = searchParams.get("shipId") ? parseInt(searchParams.get("shipId")!) : undefined
     const teamId = searchParams.get("teamId") ? parseInt(searchParams.get("teamId")!) : undefined
 
-    const where: Record<string, unknown> = getWorkHourFilter(auth.role, auth.teamId)
+    const where: Record<string, unknown> = await getWorkHourFilter(auth.role, auth.userId, auth.teamId)
     if (shipId) where.shipId = shipId
     if (teamId) where.teamId = teamId
     if (recordDateFrom || recordDateTo) {
@@ -113,9 +113,23 @@ export async function POST(request: NextRequest) {
 
     const { recordDate, shipId, teamId, note, entries } = parsed.data
 
-    // leader 只能录入本队伍数据
-    if (auth.role === "leader" && auth.teamId !== teamId) {
-      return error("FORBIDDEN", "只能录入本队伍工时记录", 403)
+    // leader 只能录入本队伍 + 被分配到的船舶
+    if (auth.role === "leader") {
+      if (auth.teamId !== teamId) {
+        return error("FORBIDDEN", "只能录入本队伍工时记录", 403)
+      }
+      const leaderShips = await getLeaderShipIds(auth.teamId!)
+      if (!leaderShips.includes(shipId)) {
+        return error("FORBIDDEN", "该船舶未分配给你管理的队伍", 403)
+      }
+    }
+
+    // supervisor 只能录入自己管理船舶的工时
+    if (auth.role === "supervisor") {
+      const supervisorShips = await getSupervisorShipIds(auth.userId)
+      if (!supervisorShips.includes(shipId)) {
+        return error("FORBIDDEN", "只能录入自己管理船舶的工时", 403)
+      }
     }
 
     // 同一日期+船+队伍已存在则禁止重复

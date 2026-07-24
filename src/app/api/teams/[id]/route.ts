@@ -3,15 +3,26 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error } from "@/lib/api-response"
 import { updateTeamSchema } from "@/lib/validations"
+import { getSupervisorTeamIds } from "@/lib/permissions"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await authenticate(request)
     authorize(auth, "team:read")
     const { id } = await params
+    const teamId = parseInt(id)
+
+    // 数据级过滤
+    if (auth.role === "leader" && auth.teamId) {
+      if (teamId !== auth.teamId) return error("FORBIDDEN", "只能查看自己管理的队伍", 403)
+    }
+    if (auth.role === "supervisor") {
+      const teamIds = await getSupervisorTeamIds(auth.userId)
+      if (!teamIds.includes(teamId)) return error("FORBIDDEN", "只能查看自己管理船舶的队伍", 403)
+    }
 
     const team = await prisma.team.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: teamId },
       include: {
         leader: { select: { id: true, realName: true } },
         members: {
@@ -46,15 +57,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await authenticate(request)
-    authorize(auth, "team:manage")
     const { id } = await params
+    const teamId = parseInt(id)
+
+    // 主任可以修改自己的队伍
+    if (auth.role === "leader") {
+      if (teamId !== auth.teamId) {
+        return error("FORBIDDEN", "只能修改自己管理的队伍", 403)
+      }
+    } else {
+      // 非主任需要 team:manage 权限
+      authorize(auth, "team:manage")
+    }
 
     const body = await request.json()
     const parsed = updateTeamSchema.safeParse(body)
     if (!parsed.success) return error("VALIDATION_ERROR", parsed.error.issues[0].message)
 
     const updated = await prisma.team.update({
-      where: { id: parseInt(id) },
+      where: { id: teamId },
       data: parsed.data,
     })
     return success(updated, "更新成功")

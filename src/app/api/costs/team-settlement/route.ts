@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error } from "@/lib/api-response"
+import { getSupervisorShipIds } from "@/lib/permissions"
 
 /**
  * 内协队伍结算报表 - 聚合查询
@@ -37,6 +38,13 @@ export async function GET(request: NextRequest) {
     }
     if (auth.role === "supervisor") {
       where.supervisorId = auth.userId
+      // supervisor ship-based filtering
+      const shipIds = await getSupervisorShipIds(auth.userId)
+      if (shipIds.length > 0) {
+        where.shipId = { in: shipIds }
+      } else {
+        where.shipId = -1
+      }
     } else if (auth.role === "leader" && auth.teamId) {
       where.teamId = auth.teamId
     }

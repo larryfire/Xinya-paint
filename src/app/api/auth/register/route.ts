@@ -47,14 +47,14 @@ export async function POST(request: NextRequest) {
     // 密码加密
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // 创建用户 — approvalStatus = "pending" 表示待审核
+    // 创建用户 — approvalStatus = "pending"，需管理员审核并分配角色
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
         realName,
         phone,
-        role: "worker",
+        role: "",
         approvalStatus: "pending",
       },
       select: {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
 import { createAttendanceSchema } from "@/lib/validations"
+import { getSupervisorShipIds } from "@/lib/permissions"
 
 /** 开始出勤 */
 export async function POST(request: NextRequest) {
@@ -54,6 +55,11 @@ export async function GET(request: NextRequest) {
     if (active) where.endTime = null
     // leader 只能看自己队伍
     if (auth.role === "leader" && auth.teamId) where.teamId = auth.teamId
+    // supervisor 只看自己管理船舶的出勤
+    if (auth.role === "supervisor") {
+      const shipIds = await getSupervisorShipIds(auth.userId)
+      where.shipId = shipIds.length > 0 ? { in: shipIds } : -1
+    }
 
     const [items, total] = await Promise.all([
       prisma.attendance.findMany({

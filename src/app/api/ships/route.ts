@@ -13,10 +13,21 @@ export async function GET(request: NextRequest) {
     const { page, pageSize, skip } = getPaginationParams(searchParams)
     const status = searchParams.get("status") || undefined
     const search = searchParams.get("search") || undefined
+    const teamId = searchParams.get("teamId") ? parseInt(searchParams.get("teamId")!) : undefined
 
     const where: Record<string, unknown> = {}
+
+    // 主管只看自己管理的船舶
+    if (auth.role === "supervisor") {
+      where.supervisorId = auth.userId
+    }
+
     if (status) where.status = status
     if (search) where.name = { contains: search }
+    // 主任只看自己队伍被分配到的船舶
+    if (teamId) {
+      where.shipTeams = { some: { teamId } }
+    }
 
     const [items, total] = await Promise.all([
       prisma.ship.findMany({
@@ -24,6 +35,7 @@ export async function GET(request: NextRequest) {
         include: {
           dock: { select: { name: true } },
           berth: { select: { name: true } },
+          supervisor: { select: { id: true, realName: true } },
           _count: { select: { shipTeams: true } },
         },
         skip,
@@ -34,7 +46,6 @@ export async function GET(request: NextRequest) {
     ])
 
     const data = items.map((s) => {
-      // 计算位置描述
       let positionLabel = ""
       if (s.dock?.name) {
         positionLabel = s.dock.name
@@ -56,6 +67,8 @@ export async function GET(request: NextRequest) {
         width: Number(s.width),
         height: Number(s.height),
         status: s.status,
+        supervisorId: s.supervisorId,
+        supervisorName: s.supervisor?.realName ?? null,
         dockId: s.dockId,
         dockName: s.dock?.name ?? null,
         berthId: s.berthId,

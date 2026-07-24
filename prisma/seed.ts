@@ -22,7 +22,6 @@ async function main() {
   const adminPw = await bcrypt.hash("admin123", 12)
   const supervisorPw = await bcrypt.hash("super123", 12)
   const leaderPw = await bcrypt.hash("leader123", 12)
-  const workerPw = await bcrypt.hash("worker123", 12)
 
   await prisma.user.upsert({
     where: { username: "admin" },
@@ -70,22 +69,8 @@ async function main() {
 
   await prisma.user.update({ where: { id: leader.id }, data: { teamId: team1.id } })
 
-  // 3. 创建工人
-  const workers = [
-    { username: "worker1", realName: "王大锤", gender: "male", age: 35, craftType: "喷漆工", level: "高级工", teamId: team1.id },
-    { username: "worker2", realName: "刘铁柱", gender: "male", age: 28, craftType: "打磨工", level: "中级工", teamId: team1.id },
-    { username: "worker3", realName: "赵小刚", gender: "male", age: 32, craftType: "除锈工", level: "中级工", teamId: team2.id },
-    { username: "worker4", realName: "陈阿强", gender: "male", age: 45, craftType: "涂装工", level: "高级技师", teamId: team2.id },
-    { username: "worker5", realName: "林师傅", gender: "male", age: 50, craftType: "焊工", level: "技师", teamId: team3.id },
-    { username: "worker6", realName: "周美芳", gender: "female", age: 26, craftType: "质检员", level: "初级工", teamId: team3.id },
-  ]
-  for (const w of workers) {
-    await prisma.user.upsert({
-      where: { username: w.username },
-      update: {},
-      create: { ...w, password: workerPw, role: "worker" },
-    })
-  }
+  // 3. 获取主管用户（用于分配船舶）
+  const supervisor = await prisma.user.findFirst({ where: { role: "supervisor" } })
 
   // ==================== 鑫亚厂区 (factoryId=1) ====================
   console.log("创建鑫亚厂区数据...")
@@ -149,8 +134,8 @@ async function main() {
   for (const ship of xinyaShipsWithDocks) {
     await prisma.ship.upsert({
       where: { name: ship.name },
-      update: { factoryId: 1 },
-      create: ship,
+      update: { factoryId: 1, supervisorId: supervisor?.id ?? null },
+      create: { ...ship, supervisorId: supervisor?.id ?? null },
     })
   }
 
@@ -219,8 +204,8 @@ async function main() {
   for (const ship of yataiShips) {
     await prisma.ship.upsert({
       where: { name: ship.name },
-      update: { factoryId: 2 },
-      create: ship,
+      update: { factoryId: 2, supervisorId: supervisor?.id ?? null },
+      create: { ...ship, supervisorId: supervisor?.id ?? null },
     })
   }
 

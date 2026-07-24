@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error } from "@/lib/api-response"
 import { createWorkHourRecordSchema } from "@/lib/validations"
-import { getWorkHourFilter } from "@/lib/permissions"
+import { getWorkHourFilter, getLeaderShipIds, getSupervisorShipIds } from "@/lib/permissions"
 import { calcHours, calcWorkDays } from "@/lib/utils"
 import { WORK_HOURS_PER_DAY } from "@/lib/constants"
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const recordId = parseInt(id)
     if (isNaN(recordId)) return error("VALIDATION_ERROR", "ID 格式错误")
 
-    const baseWhere = getWorkHourFilter(auth.role, auth.teamId)
+    const baseWhere = await getWorkHourFilter(auth.role, auth.userId, auth.teamId)
     const record = await prisma.workHourRecord.findFirst({
       where: { ...baseWhere, id: recordId },
       include: {
@@ -85,15 +85,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { recordDate, shipId, teamId, note, entries } = parsed.data
 
-    const baseWhere = getWorkHourFilter(auth.role, auth.teamId)
+    const baseWhere = await getWorkHourFilter(auth.role, auth.userId, auth.teamId)
     const existing = await prisma.workHourRecord.findFirst({
       where: { ...baseWhere, id: recordId },
     })
     if (!existing) return error("NOT_FOUND", "记录不存在", 404)
 
     // leader 只能修改本队伍记录
-    if (auth.role === "leader" && auth.teamId !== teamId) {
-      return error("FORBIDDEN", "只能修改本队伍工时记录", 403)
+    if (auth.role === "leader") {
+      if (auth.teamId !== teamId) {
+        return error("FORBIDDEN", "只能修改本队伍工时记录", 403)
+      }
+      const leaderShips = await getLeaderShipIds(auth.teamId!)
+      if (!leaderShips.includes(shipId)) {
+        return error("FORBIDDEN", "该船舶未分配给你管理的队伍", 403)
+      }
+    }
+
+    // supervisor 只能修改自己管理船舶的工时
+    if (auth.role === "supervisor") {
+      const supervisorShips = await getSupervisorShipIds(auth.userId)
+      if (!supervisorShips.includes(shipId)) {
+        return error("FORBIDDEN", "只能修改自己管理船舶的工时", 403)
+      }
     }
 
     // 检查更新后是否会与已有记录冲突（排除自身）
@@ -172,7 +186,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const recordId = parseInt(id)
     if (isNaN(recordId)) return error("VALIDATION_ERROR", "ID 格式错误")
 
-    const baseWhere = getWorkHourFilter(auth.role, auth.teamId)
+    const baseWhere = await getWorkHourFilter(auth.role, auth.userId, auth.teamId)
     const existing = await prisma.workHourRecord.findFirst({
       where: { ...baseWhere, id: recordId },
     })

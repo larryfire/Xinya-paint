@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
+import { getSupervisorTeamIds } from "@/lib/permissions"
 import { createSafetyPunishmentSchema } from "@/lib/validations"
 
 export async function GET(request: NextRequest) {
@@ -20,7 +21,6 @@ export async function GET(request: NextRequest) {
 
     // 数据过滤
     if (auth.role === "leader" && auth.teamId) where.teamId = auth.teamId
-    else if (auth.role === "worker") where.punishedPersonId = auth.userId
     else if (teamId) where.teamId = teamId
 
     if (category) where.category = category
@@ -28,6 +28,16 @@ export async function GET(request: NextRequest) {
       where.punishmentTime = {}
       if (startDate) (where.punishmentTime as any).gte = new Date(startDate)
       if (endDate) (where.punishmentTime as any).lte = new Date(endDate)
+    }
+
+    // supervisor ship-team filtering
+    if (auth.role === "supervisor") {
+      const teamIds = await getSupervisorTeamIds(auth.userId)
+      if (teamIds.length > 0) {
+        where.teamId = { in: teamIds }
+      } else {
+        where.teamId = -1
+      }
     }
 
     const [items, total] = await Promise.all([

@@ -7,6 +7,7 @@ import { z } from "zod"
 /** 审核操作校验 */
 const reviewSchema = z.object({
   action: z.enum(["approve", "reject"]),
+  role: z.enum(["admin", "supervisor", "leader"]).optional(),
 })
 
 /**
@@ -44,9 +45,11 @@ export async function PUT(
     }
 
     if (action === "approve") {
+      const updateData: Record<string, unknown> = { approvalStatus: "approved" }
+      if (parsed.data.role) updateData.role = parsed.data.role
       await prisma.user.update({
         where: { id: targetId },
-        data: { approvalStatus: "approved" },
+        data: updateData,
       })
       return success(null, `已通过 ${user.realName} 的注册申请`)
     } else {

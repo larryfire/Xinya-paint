@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
 import { createUserSchema } from "@/lib/validations"
+import { getSupervisorTeamIds } from "@/lib/permissions"
 
 export async function GET(request: NextRequest) {
   try {
     const user = await authenticate(request)
-    authorize(user, "user:manage")
+    authorize(user, "team:read")
 
     const { searchParams } = request.nextUrl
     const { page, pageSize, skip } = getPaginationParams(searchParams)
@@ -25,6 +26,17 @@ export async function GET(request: NextRequest) {
         { username: { contains: search } },
         { phone: { contains: search } },
       ]
+    }
+
+    // 主管只看自己管理船舶队伍中的成员
+    if (user.role === "supervisor") {
+      const teamIds = await getSupervisorTeamIds(user.userId)
+      where.teamId = teamIds.length > 0 ? { in: teamIds } : -1
+      where.role = { not: "admin" }
+    }
+    // 主任只看自己队伍的成员
+    if (user.role === "leader" && user.teamId) {
+      where.teamId = user.teamId
     }
 
     const [items, total] = await Promise.all([

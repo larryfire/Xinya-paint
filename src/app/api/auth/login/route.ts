@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
       return error("AUTH_FAILED", "用户名或密码错误", 401)
     }
 
+    // 检查角色是否已分配
+    if (!user.role || user.role === "") {
+      return error("NO_ROLE", "账号尚未分配角色，请联系管理员", 403)
+    }
+
     // 检查审核状态
     if (user.approvalStatus === "pending") {
       return error("PENDING_APPROVAL", "账号正在等待管理员审核，请耐心等待", 403)

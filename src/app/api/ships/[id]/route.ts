@@ -6,7 +6,8 @@ import { updateShipSchema, assignTeamSchema } from "@/lib/validations"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await authenticate(request)
+    const auth = await authenticate(request)
+    authorize(auth, "ship:read")
     const { id } = await params
 
     const shipId = parseInt(id)
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       include: {
         dock: { select: { name: true } },
         berth: { select: { name: true } },
+        supervisor: { select: { id: true, realName: true } },
         shipTeams: {
           include: {
             team: {
@@ -63,6 +65,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       length: Number(ship.length),
       width: Number(ship.width),
       height: Number(ship.height),
+      supervisorId: ship.supervisorId,
+      supervisorName: ship.supervisor?.realName ?? null,
       dockName: (dock as { name: string } | null)?.name ?? null,
       berthName: (berth as { name: string } | null)?.name ?? null,
       teams: ship.shipTeams.map((st) => ({
@@ -86,12 +90,22 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const auth = await authenticate(request)
     authorize(auth, "ship:manage")
     const { id } = await params
+    const shipId = parseInt(id)
+
+    // 主管只能修改自己管理的船舶
+    if (auth.role === "supervisor") {
+      const ship = await prisma.ship.findUnique({ where: { id: shipId }, select: { supervisorId: true } })
+      if (!ship || ship.supervisorId !== auth.userId) {
+        return error("FORBIDDEN", "只能修改自己管理的船舶", 403)
+      }
+    }
+
     const body = await request.json()
     const parsed = updateShipSchema.safeParse(body)
     if (!parsed.success) return error("VALIDATION_ERROR", parsed.error.issues[0].message)
 
     const updated = await prisma.ship.update({
-      where: { id: parseInt(id) },
+      where: { id: shipId },
       data: parsed.data as any,
     })
     return success(updated, "更新成功")
@@ -108,7 +122,17 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const auth = await authenticate(request)
     authorize(auth, "ship:manage")
     const { id } = await params
-    await prisma.ship.delete({ where: { id: parseInt(id) } })
+    const shipId = parseInt(id)
+
+    // 主管只能删除自己管理的船舶
+    if (auth.role === "supervisor") {
+      const ship = await prisma.ship.findUnique({ where: { id: shipId }, select: { supervisorId: true } })
+      if (!ship || ship.supervisorId !== auth.userId) {
+        return error("FORBIDDEN", "只能删除自己管理的船舶", 403)
+      }
+    }
+
+    await prisma.ship.delete({ where: { id: shipId } })
     return success(null, "删除成功")
   } catch (err) {
     if (err instanceof Error && (err.name === "UnauthorizedError" || err.name === "ForbiddenError")) {

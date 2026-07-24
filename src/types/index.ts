@@ -2,7 +2,7 @@ export interface UserInfo {
   id: number
   username: string
   realName: string
-  role: "admin" | "supervisor" | "leader" | "worker"
+  role: "admin" | "supervisor" | "leader" | null
   gender?: string | null
   age?: number | null
   craftType?: string | null
@@ -33,6 +33,8 @@ export interface ShipInfo {
   width: number
   height: number
   status: "docked" | "at_berth" | "at_sea" | "maintenance"
+  supervisorId?: number | null
+  supervisorName?: string
   factoryId?: number
   dockId?: number | null
   dockName?: string

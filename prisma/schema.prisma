@@ -15,7 +15,7 @@ model User {
   username       String   @unique
   password       String
   realName       String   @map("real_name")
-  role           String   @default("worker")
+  role           String?
   gender         String?
   age            Int?
   craftType      String?  @map("craft_type")
@@ -29,6 +29,7 @@ model User {
 
   team               Team?                @relation(fields: [teamId], references: [id], onDelete: SetNull)
   ledTeams           Team[]               @relation("TeamLeader")
+  supervisedShips    Ship[]               @relation("ShipSupervisor")
   externalPlateCosts ExternalPlateCost[]  @relation("Supervisor")
   cargoHoldCosts     CargoHoldCost[]      @relation("CargoSupervisor")
   safetyIssued       SafetyPunishment[]   @relation("Issuer")
@@ -77,11 +78,13 @@ model Ship {
   rotation       Float?
   repairStatus   String?  @default("not_started") @map("repair_status")
   positionDetail String?  @map("position_detail")
+  supervisorId  Int?     @map("supervisor_id")
   departureDate  DateTime? @map("departure_date")
   createdAt      DateTime @default(now()) @map("created_at")
 
   dock               Dock?               @relation("ShipDock", fields: [dockId], references: [id], onDelete: SetNull)
   berth              Dock?               @relation("ShipBerth", fields: [berthId], references: [id], onDelete: SetNull)
+  supervisor         User?               @relation("ShipSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
   externalPlateCosts ExternalPlateCost[]
   cargoHoldCosts     CargoHoldCost[]
   rustRemovalCosts   RustRemovalCost[]

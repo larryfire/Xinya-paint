@@ -198,9 +198,7 @@ export function Sidebar({
               ? "管理员"
               : user.role === "supervisor"
                 ? "涂装主管"
-                : user.role === "leader"
-                  ? "工地主任"
-                  : "员工"}
+                : "工地主任"}
           </p>
         </div>
       )}

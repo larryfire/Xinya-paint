@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
 import { createTeamSchema } from "@/lib/validations"
+import { getSupervisorTeamIds } from "@/lib/permissions"
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,6 +20,12 @@ export async function GET(request: NextRequest) {
     // 工地主任只能看自己的队伍
     if (auth.role === "leader" && auth.teamId) {
       where.id = auth.teamId
+    }
+
+    // 主管只看自己管理船舶下的队伍
+    if (auth.role === "supervisor") {
+      const teamIds = await getSupervisorTeamIds(auth.userId)
+      where.id = teamIds.length > 0 ? { in: teamIds } : -1
     }
 
     const [items, total] = await Promise.all([

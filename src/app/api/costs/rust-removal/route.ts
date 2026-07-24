@@ -2,7 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error, paginated, getPaginationParams } from "@/lib/api-response"
-import { getCostFilter } from "@/lib/permissions"
+import { getCostFilter, getSupervisorShipIds } from "@/lib/permissions"
 import { createRustRemovalCostSchema } from "@/lib/validations"
 
 export async function GET(request: NextRequest) {
@@ -42,6 +42,16 @@ export async function GET(request: NextRequest) {
         { repairNumber: { contains: search } },
         { ship: { name: { contains: search } } },
       ]
+    }
+
+    // supervisor ship-based filtering
+    if (auth.role === "supervisor") {
+      const shipIds = await getSupervisorShipIds(auth.userId)
+      if (shipIds.length > 0) {
+        where.shipId = { in: shipIds }
+      } else {
+        where.shipId = -1
+      }
     }
 
     const [items, total] = await Promise.all([
@@ -91,6 +101,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsed = createRustRemovalCostSchema.safeParse(body)
     if (!parsed.success) return error("VALIDATION_ERROR", parsed.error.issues[0].message)
+
+    // supervisor ownership check
+    if (auth.role === "supervisor") {
+      const ship = await prisma.ship.findUnique({
+        where: { id: parsed.data.shipId },
+        select: { supervisorId: true },
+      })
+      if (!ship || ship.supervisorId !== auth.userId) {
+        return error("FORBIDDEN", "只能为您主管的船舶创建成本记录", 403)
+      }
+    }
 
     const cost = await prisma.rustRemovalCost.create({ data: parsed.data as any })
     return success(cost, "创建成功", 201)

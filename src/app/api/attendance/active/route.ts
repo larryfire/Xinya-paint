@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authenticate, authorize } from "@/lib/auth"
 import { success, error } from "@/lib/api-response"
+import { getSupervisorShipIds } from "@/lib/permissions"
 
 /** 获取当前所有活跃出勤（endTime=null） */
 export async function GET(request: NextRequest) {
@@ -11,6 +12,10 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = { endTime: null }
     if (auth.role === "leader" && auth.teamId) where.teamId = auth.teamId
+    if (auth.role === "supervisor") {
+      const shipIds = await getSupervisorShipIds(auth.userId)
+      where.shipId = shipIds.length > 0 ? { in: shipIds } : -1
+    }
 
     const items = await prisma.attendance.findMany({
       where,
